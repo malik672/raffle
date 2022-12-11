@@ -2,6 +2,7 @@ pragma solidity ^0.8;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
@@ -13,7 +14,7 @@ interface ITest {
 
 // RafluxStorage is a contract that can store ERC-1155 and ERC-721 tokens,
 // and track the number of points that each address has.
-contract RafluxStorage {
+contract RafluxStorage is IERC721Receiver {
     using ERC165Checker for address;
 
     //State Variables
@@ -30,6 +31,8 @@ contract RafluxStorage {
 
     // A mapping to track the number of points that each address has.
     mapping(address => uint256) points;
+    // A mapping of conc address to user address to token
+    mapping(address => mapping(address => uint256)) checks;
 
     //constructor
     constructor() payable {}
@@ -39,6 +42,22 @@ contract RafluxStorage {
     // - removePoint: emitted when points are removed from an address
     event addPoint(address indexed _user, uint256 _points);
     event removePoint(address indexed _user, uint256 _points);
+
+    //MODIFIER
+    //checks if points is zero
+    modifier checkZero(uint256 _points) {
+        require(_points != 0, "can't be zero");
+        _;
+    }
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) public virtual override returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
 
     //FUNCTIONS
     //check if the token is an erc721 token
@@ -51,18 +70,17 @@ contract RafluxStorage {
         return nftAddress.supportsInterface(IID_IERC1155);
     }
 
-    //MODIFIER
-    //checks if points is zero
-    modifier checkZero(uint256 _points) {
-        require(_points != 0, "can't be zero");
-        _;
+    function  approvew(address _con, uint256 _tokenId) public {
+                  //approve token for transfer
+            (bool success, bytes memory data) = _con.delegatecall(
+                abi.encodeWithSignature("approve(address, uint256)", address(this), _tokenId)
+            );
     }
 
     //transfer nft from user to contract
     function depositNft(address _tokenAddress, uint256 _tokenId) public {
         if (isERC721(_tokenAddress)) {
             IERC721 Token = IERC721(_tokenAddress);
-            Token.approve(address(this), _tokenId);
             Token.safeTransferFrom(msg.sender, address(this), _tokenId);
         } else if (isERC1155(_tokenAddress)) {
             IERC1155 Tokens = IERC1155(_tokenAddress);
