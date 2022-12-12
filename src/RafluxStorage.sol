@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 interface ITest {
@@ -14,7 +16,7 @@ interface ITest {
 
 // RafluxStorage is a contract that can store ERC-1155 and ERC-721 tokens,
 // and track the number of points that each address has.
-contract RafluxStorage is IERC721Receiver {
+contract RafluxStorage is IERC721Receiver,IERC1155Receiver {
     using ERC165Checker for address;
 
     //State Variables
@@ -50,6 +52,29 @@ contract RafluxStorage is IERC721Receiver {
         _;
     }
 
+    //standard that allows us to recceive erc1155 tokens
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external virtual override returns (bytes4){
+      return this.onERC1155Received.selector;
+    }
+
+    //standarad that allows us to receive erc1155 in batch
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external virtual override returns (bytes4){
+        return this.onERC1155BatchReceived.selector;
+    }
+
+    //Standard that allows us to receive erc721 tokens
     function onERC721Received(
         address,
         address,
@@ -70,13 +95,6 @@ contract RafluxStorage is IERC721Receiver {
         return nftAddress.supportsInterface(IID_IERC1155);
     }
 
-    function  approvew(address _con, uint256 _tokenId) public {
-                  //approve token for transfer
-            (bool success, bytes memory data) = _con.delegatecall(
-                abi.encodeWithSignature("approve(address, uint256)", address(this), _tokenId)
-            );
-    }
-
     //transfer nft from user to contract
     function depositNft(address _tokenAddress, uint256 _tokenId) public {
         if (isERC721(_tokenAddress)) {
@@ -84,14 +102,17 @@ contract RafluxStorage is IERC721Receiver {
             Token.safeTransferFrom(msg.sender, address(this), _tokenId);
         } else if (isERC1155(_tokenAddress)) {
             IERC1155 Tokens = IERC1155(_tokenAddress);
-            //   Tokens.safeTransferFrom(msg.sender, address(this), _tokenId);
+              Tokens.safeTransferFrom(msg.sender, address(this), _tokenId, 1, "");
         }
     }
+    
+
 
     function supportsInterface(bytes4 interfaceId)
         public
         view
         virtual
+        override
         returns (bool)
     {
         return interfaceId == IID_ITEST || interfaceId == IID_IERC165;
