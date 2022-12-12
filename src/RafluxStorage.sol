@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface ITest {
     function isERC1155(address nftAddress) external returns (bool);
@@ -16,7 +17,7 @@ interface ITest {
 
 // RafluxStorage is a contract that can store ERC-1155 and ERC-721 tokens,
 // and track the number of points that each address has.
-contract RafluxStorage is IERC721Receiver,IERC1155Receiver {
+contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
     using ERC165Checker for address;
 
     //State Variables
@@ -96,7 +97,7 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver {
     }
 
     //transfer nft from user to contract
-    function depositNft(address _tokenAddress, uint256 _tokenId) public {
+    function depositNft(address _tokenAddress, uint256 _tokenId) public onlyOwner {
         if (isERC721(_tokenAddress)) {
             IERC721 Token = IERC721(_tokenAddress);
             Token.safeTransferFrom(msg.sender, address(this), _tokenId);
@@ -128,7 +129,7 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver {
         address _user,
         uint256 _points,
         bool _bool
-    ) public checkZero(_points) {
+    ) public checkZero(_points)  onlyOwner {
         //if bool is true add to user points else subtract from user points
         if (_bool) {
             points[_user] += _points;
@@ -140,10 +141,13 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver {
     }
 
     //withdraw nft from user to contract
-    function withdrawNft(address _tokenAddress, uint256 _tokenId) public {
+    function withdrawNft(address _tokenAddress, uint256 _tokenId) public onlyOwner {
         if (isERC721(_tokenAddress)) {
             IERC721 Token = IERC721(_tokenAddress);
-            Token.safeTransferFrom(msg.sender, address(this), _tokenId);
+            Token.safeTransferFrom(address(this), msg.sender, _tokenId);
+        }else if (isERC1155(_tokenAddress)) {
+            IERC1155 Tokens = IERC1155(_tokenAddress);
+              Tokens.safeTransferFrom(address(this), msg.sender, _tokenId, 1, "");
         }
     }
 }
