@@ -1,6 +1,6 @@
 pragma solidity ^0.8 ;
 
-import "RafluxStorage.sol";
+import "./RafluxStorage.sol";
 
 //this the main contract in the raffle
 contract RaffluxMain is RafluxStorage {
