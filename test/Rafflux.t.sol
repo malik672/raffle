@@ -8,6 +8,6 @@ contract RaffluxTest is Test {
 
     // RafluxStorage Rafflux = RafluxStorage();
     function setUp() public {
-      RafluxStoragea
+      RafluxStorageas
     }
 }
