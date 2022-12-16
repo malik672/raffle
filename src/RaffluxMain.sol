@@ -54,12 +54,34 @@ contract RaffluxMain is RafluxStorage {
     }
 
     //Events
-    event Log_DelegateTicket(uint256 _proposalId, address indexed _receiver, address indexed _sender);
-    event Log_BuyTicket(uint256 _proposalId, uint256 _amount, address indexed buyer);
+    event Log_DelegateTicket(
+        uint256 _proposalId,
+        address indexed _receiver,
+        address indexed _sender
+    );
+    event Log_BuyTicket(
+        uint256 _proposalId,
+        uint256 _amount,
+        address indexed buyer
+    );
     event Log_ChangeProposalStatus(uint256 _proposalId, bool _status);
     event Log_ExecuteProposal(uint256 _proposalId, address indexed _winner);
-    event Log_RefundTicket(uint256 _proposalId, address _receiver, uint256 _amount);
-    event Log_ProposeRaffle(string  _description, address indexed _owner, uint256 _startTime, uint256 _endTime, uint256 _maxTicket, uint256 _ticketPerUser, address indexed _prize, uint256 _tokenId, uint256 _price);
+    event Log_RefundTicket(
+        uint256 _proposalId,
+        address _receiver,
+        uint256 _amount
+    );
+    event Log_ProposeRaffle(
+        string _description,
+        address indexed _owner,
+        uint256 _startTime,
+        uint256 _endTime,
+        uint256 _maxTicket,
+        uint256 _ticketPerUser,
+        address indexed _prize,
+        uint256 _tokenId,
+        uint256 _price
+    );
 
     //State Variable
     bytes32 public constant type721 = keccak256("ERC721"); // The bytes32 representation of the string "ERC721".
@@ -67,7 +89,7 @@ contract RaffluxMain is RafluxStorage {
     uint256 startIndex = 0; // The starting index for new proposals.
     //proposed raffles
     proposedRaffle[] public raffles;
-    uint256 public current;
+    uint256 public currentValidators;
 
     // Mappings to track the status of each raffle.
     // Maps the proposal ID to the remaining time until the raffle ends.
@@ -91,12 +113,24 @@ contract RaffluxMain is RafluxStorage {
     //map of proposalId to buyers
     mapping(uint256 => address[]) buyers;
 
+    //mapping of addresses to bool, this is used to select a validator
+    mapping(address => bool) valid;
+
     //map of proposalId to
     mapping(uint256 => bool) isActive;
+
+    //map of address to bool, to blacklist an address
+    mapping(address => bool) blacklist;
 
     //MODIFIERS
     modifier checksTime(uint256 _proposalId) {
         if (timeLeft(_proposalId) == 0) revert noTime("the raffle has closed");
+
+        _;
+    }
+
+    modifier onlyValidators() {
+        if(valid[msg.sender] != true) revert transactReverted("not a validator");
 
         _;
     }
@@ -148,11 +182,25 @@ contract RaffluxMain is RafluxStorage {
         );
         isActive[startIndex] = true;
         startIndex++;
-        emit Log_ProposeRaffle(_description, _owner, _startTime, _endTime, _maxTicket, _ticketPerUser, _prize, _tokenId, _price);
-        (bool success, bytes memory data) = address(Storage).delegatecall(
-            abi.encodeWithSignature("depositNft(address, uint256)", _prize, _tokenId)
+        emit Log_ProposeRaffle(
+            _description,
+            _owner,
+            _startTime,
+            _endTime,
+            _maxTicket,
+            _ticketPerUser,
+            _prize,
+            _tokenId,
+            _price
         );
-        if(success) revert transactReverted(string(data)); 
+        (bool success, bytes memory data) = address(Storage).delegatecall(
+            abi.encodeWithSignature(
+                "depositNft(address, uint256)",
+                _prize,
+                _tokenId
+            )
+        );
+        if (success) revert transactReverted(string(data));
     }
 
     function getRandomness() public {}
@@ -272,10 +320,27 @@ contract RaffluxMain is RafluxStorage {
 
     // Function to stop a raffle abruptly or continue the raffle.
     // Takes the proposal ID as an argument.
-    function changeProposalStatus(uint256 _proposalId) public {
+    function changeProposalStatus(uint256 _proposalId) public onlyValidators(){
         //this continue or stop a proposal
         raffles[_proposalId].stop = !raffles[_proposalId].stop;
         emit Log_ChangeProposalStatus(_proposalId, raffles[_proposalId].stop);
+    }
+
+    /// @notice this function let's you add as validator, you need to pay a certain amount to 
+    /// @dev this function let's you add as validator
+    /// @param _validator the address of to be added as validator
+    function addValidators(address _validator) public {
+        if(currentValidators == 7) revert transactReverted("maximum validators reached");
+        valid[_validator] = true;
+        currentValidators++;
+
+    }
+
+    /// @notice this function let's you remove a validator
+    /// @dev this function let's you remove a validator
+    /// @param _validator the address of to be added as validator
+    function removeValidator(address _validator) public {
+        valid[_validator] = false;
     }
 
     /**
