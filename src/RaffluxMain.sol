@@ -53,6 +53,14 @@ contract RaffluxMain is RafluxStorage {
         address winner; //winner of the raffle
     }
 
+    //Events
+    event Log_DelegateTicket(uint256 _proposalId, address indexed _receiver, address indexed _sender);
+    event Log_BuyTicket(uint256 _proposalId, uint256 _amount, address indexed buyer);
+    event Log_ChangeProposalStatus(uint256 _proposalId, bool _status);
+    event Log_ExecuteProposal(uint256 _proposalId, address indexed _winner);
+    event Log_RefundTicket(uint256 _proposalId, address _receiver, uint256 _amount);
+    event Log_ProposeRaffle(string  _description, address indexed _owner, uint256 _startTime, uint256 _endTime, uint256 _maxTicket, uint256 _ticketPerUser, address indexed _prize, uint256 _tokenId, uint256 _price);
+
     //State Variable
     bytes32 public constant type721 = keccak256("ERC721"); // The bytes32 representation of the string "ERC721".
     bytes32 public constant type1155 = keccak256("ERC1155"); // The bytes32 representation of the string "ERC1155".
@@ -140,9 +148,11 @@ contract RaffluxMain is RafluxStorage {
         );
         isActive[startIndex] = true;
         startIndex++;
+        emit Log_ProposeRaffle(_description, _owner, _startTime, _endTime, _maxTicket, _ticketPerUser, _prize, _tokenId, _price);
         (bool success, bytes memory data) = address(Storage).delegatecall(
             abi.encodeWithSignature("depositNft(address, uint256)", _prize, _tokenId)
         );
+        if(success) revert transactReverted(string(data)); 
     }
 
     function getRandomness() public {}
@@ -175,6 +185,8 @@ contract RaffluxMain is RafluxStorage {
         maximumUserTicket[_proposalId][msg.sender] += 1;
         totalUserTicket[_proposalId][msg.sender]++;
         totalAmount[_proposalId] = totalAmount[_proposalId].add(msg.value);
+        buyers[_proposalId].push(msg.sender);
+        emit Log_BuyTicket(_proposalId, 1, msg.sender);
         (bool status, bytes memory data) = address(this).call{
             value: raffles[_proposalId].price
         }("");
@@ -205,6 +217,7 @@ contract RaffluxMain is RafluxStorage {
         maximumUserTicket[_proposalId][_receiver] += 1;
         totalUserTicket[_proposalId][_receiver] += 1;
         totalUserTicket[_proposalId][msg.sender]--;
+        emit Log_DelegateTicket(_proposalId, _receiver, msg.sender);
     }
 
     // Function to refund a ticket if the raffle is stopped before it ends.
@@ -226,6 +239,7 @@ contract RaffluxMain is RafluxStorage {
         totalAmount[_proposalId] = totalAmount[_proposalId].sub(
             raffles[_proposalId].price
         );
+        emit Log_RefundTicket(_proposalId, msg.sender, 1);
         (bool status, bytes memory data) = msg.sender.call{
             value: raffles[_proposalId].price
         }("");
@@ -249,6 +263,7 @@ contract RaffluxMain is RafluxStorage {
             raffles[_proposalId].tokenId
         );
         //transfer ether to owner
+        emit Log_ExecuteProposal(_proposalId, raffles[_proposalId].winner);
         (bool status, bytes memory data) = raffles[_proposalId].owner.call{
             value: totalAmount[_proposalId]
         }("");
@@ -260,6 +275,7 @@ contract RaffluxMain is RafluxStorage {
     function changeProposalStatus(uint256 _proposalId) public {
         //this continue or stop a proposal
         raffles[_proposalId].stop = !raffles[_proposalId].stop;
+        emit Log_ChangeProposalStatus(_proposalId, raffles[_proposalId].stop);
     }
 
     /**
