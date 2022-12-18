@@ -291,7 +291,7 @@ contract RaffluxMain is RafluxStorage {
         (bool status, bytes memory data) = msg.sender.call{
             value: raffles[_proposalId].price
         }("");
-        if (status) revert transactReverted(string(data));
+        if (status) revert transactReverted(string(data)); 
     }
 
     // Function to execute a raffle when the end time is reached or maximum ticket has been sold.
@@ -326,15 +326,6 @@ contract RaffluxMain is RafluxStorage {
         emit Log_ChangeProposalStatus(_proposalId, raffles[_proposalId].stop);
     }
 
-    /// @notice this function let's you add as validator, you need to pay a certain amount to 
-    /// @dev this function let's you add as validator
-    /// @param _validator the address of to be added as validator
-    function addValidators(address _validator) public {
-        if(currentValidators == 7) revert transactReverted("maximum validators reached");
-        valid[_validator] = true;
-        currentValidators++;
-
-    }
 
     /// @notice this function let's you remove a validator
     /// @dev this function let's you remove a validator
