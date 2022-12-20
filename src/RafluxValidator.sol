@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8;
 
-error transactReverted(string data);
+import "./RaffluxMain.sol";
+contract RafluxValidator is RaffluxMain {
+     RaffluxMain Main;
 
-contract RafluxDao {
-    constructor() public {}
+    constructor() public {
+        Main = new RaffluxMain();
+    }
 
     //map of address to bool used to set a validator
     mapping(address => bool) public Validators;
@@ -23,6 +26,10 @@ contract RafluxDao {
         address[] memory currentVa;
         currentValidators = currentVa;
         current = 0;
+    }
+
+    function checkValidator(address _validator) view external returns(bool){
+      return Validators[_validator];
     }
 
     function addValidators(address _validator) public {
