@@ -95,6 +95,9 @@ contract RaffluxMain is RafluxStorage {
     // Maps the proposal ID to the remaining time until the raffle ends.
     mapping(uint256 => uint256) public timeLefts;
 
+    //Maps the raffleId to a bool, this checks if the user can vote
+    mapping(uint256 => bool) canVotes; 
+
     // Maps the proposal ID and user address to whether the user has bought a ticket for the raffle.
     mapping(uint256 => mapping(address => bool)) public hasTicket;
 
@@ -218,6 +221,7 @@ contract RaffluxMain is RafluxStorage {
         payable
         checksTime(_proposalId)
     {
+        canVotes[_proposalId] = true;
         if (
             maximumUserTicket[_proposalId][msg.sender] ==
             raffles[_proposalId].ticketPerUser
@@ -266,6 +270,11 @@ contract RaffluxMain is RafluxStorage {
         totalUserTicket[_proposalId][_receiver] += 1;
         totalUserTicket[_proposalId][msg.sender]--;
         emit Log_DelegateTicket(_proposalId, _receiver, msg.sender);
+    }
+ 
+    //this function checks if a user can vote on a raffleId;
+    function canVote(uint256 _raffleId) external {
+       canVotes[_raffleId] = true;
     }
 
     // Function to refund a ticket if the raffle is stopped before it ends.
@@ -326,13 +335,6 @@ contract RaffluxMain is RafluxStorage {
         emit Log_ChangeProposalStatus(_proposalId, raffles[_proposalId].stop);
     }
 
-
-    /// @notice this function let's you remove a validator
-    /// @dev this function let's you remove a validator
-    /// @param _validator the address of to be added as validator
-    function removeValidator(address _validator) public {
-        valid[_validator] = false;
-    }
 
     /**
      * @dev Function to get the remaining time until a raffle ends.

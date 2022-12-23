@@ -54,17 +54,17 @@ contract RaffluxTest is Test {
     function testUpdatePointExpectedRevert() public {
       vm.expectRevert("can't be zero");
       //testing for spamming  cant be zero
-      Storage.updatePoints(myAddress, 0, true);
+      Storage.updatePoints(myAddress, 0, 0, true);
       vm.prank(Storage.owner());
       /*since the update functions and other mutable functions cann only be called by the owner, we will have to transfer ownership  */
-      Storage.updatePoints(myAddress, 1, true);
+      Storage.updatePoints(myAddress, 1, 0,  true);
       //check it add points
-      assertEq(Storage.viewPoints(myAddress), 1);
+      assertEq(Storage.viewPoints(myAddress, 0), 1);
       //check it removes points
       //the two(2) here is useless since the remove points remove all points a user has and equate it to zero
-      Storage.updatePoints(myAddress, 2, false);
+      Storage.updatePoints(myAddress, 2,0, false);
       // //check if point equal to zero after removal
-      assertEq(Storage.viewPoints(myAddress), 0);      
+      assertEq(Storage.viewPoints(myAddress,0), 0);      
     }
 
     // function testDeposit() public {};

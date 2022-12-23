@@ -3,11 +3,14 @@ pragma solidity ^0.8;
 
 import "./RafluxValidator.sol";
 contract RaffluxDao is RafluxValidator{
-     RafluxValidator Validator;
+    RafluxValidator Validator;
 
     constructor() public {
         Validator = new RafluxValidator();
     }
+
+    //Mapping of proposald to boolean
+    mapping(uint256 => bool) public isValid;
 
     // The contract's struct for storing proposal information.
     struct Proposal {
@@ -25,6 +28,7 @@ contract RaffluxDao is RafluxValidator{
     //State Variable
     Proposal[] public proposals;
     uint256 treshold;
+    uint256 public currentProposalId;
 
     //this is to start a proposal
     function startProposal(
@@ -50,21 +54,31 @@ contract RaffluxDao is RafluxValidator{
                 true
             )
         );
+        isValid[proposals.length - 1] = true;
     }
 
-    function Vote(bool _status) public {
-      if(Validator.viewPoints(msg.sender) < 10) revert transactReverted("you don't have enough points to vote");
-      
+    //function to vote for or against a proposal
+    function Vote(uint256 _proposalId, bool _status) public {
+      if(Validator.viewPoints(msg.sender, proposals[_proposalId].raffleId) < 10) revert transactReverted("you don't have enough points to vote");
+      if(isValid[_proposalId] != true) revert transactReverted("proposalId not valid");
+      if(proposals[_proposalId].voteAgainst >= proposals[_proposalId].voteFor)revert transactReverted("proposal did not pass");
+      if(_status == true){
+       proposals[_proposalId].voteFor++;
+      }else{
+       proposals[_proposalId].voteAgainst++;
+      }
     }
 
     //this to end a proposal
     //SWITCH THIS TO IF/ELSE
     function executeProposals(uint256 _proposalId) public {
+      if(isValid[_proposalId] != true) revert transactReverted("proposalId not valid");
       if(block.timestamp < proposals[_proposalId].endTime)revert transactReverted("proposal still active");
       if(proposals[_proposalId].voteAgainst >= proposals[_proposalId].voteFor)revert transactReverted("proposal did not pass");
+      isValid[_proposalId] = false;
       if (proposals[_proposalId].functionId == 0) {
-            // This block of code will be executed if x is 0.
-            Validator.changeProposalStatus(proposals[_proposalId].raffleId);
+        // This block of code will be executed if x is 0.
+         Validator.changeProposalStatus(proposals[_proposalId].raffleId);
       }
       if(proposals[_proposalId].functionId == 1){
         // This block of code will be executed if x is 1.

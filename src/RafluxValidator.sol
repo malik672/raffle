@@ -31,7 +31,8 @@ contract RafluxValidator is RaffluxMain {
     function checkValidator(address _validator) view external returns(bool){
       return Validators[_validator];
     }
-
+  
+    //add validators
     function addValidators(address _validator) public {
         if (current == 7) revert transactReverted("maximum validators reached");
         if (Validators[_validator] == true)

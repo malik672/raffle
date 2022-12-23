@@ -33,7 +33,7 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
     bytes4 public constant IID_IERC721 = type(IERC721).interfaceId;
 
     // A mapping to track the number of points that each address has.
-    mapping(address => uint256) points;
+    mapping(uint256 => mapping(address => uint256)) points;
     // A mapping of conc address to user address to token
     mapping(address => mapping(address => uint256)) checks;
 
@@ -97,8 +97,8 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
     }
 
     //transfer nft from user to contract
-    function depositNft(address _tokenAddress, uint256 _tokenId) public onlyOwner {
-        updatePoints(msg.sender, 10, true);
+    function depositNft(address _tokenAddress, uint256 _tokenId, uint256 _proposalId) public onlyOwner {
+        updatePoints(msg.sender, 10, _proposalId, true);
         if (isERC721(_tokenAddress)) {
             IERC721 Token = IERC721(_tokenAddress);
             Token.safeTransferFrom(msg.sender, address(this), _tokenId);
@@ -121,23 +121,24 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
     }
 
     // viewPoints returns the number of points that the given address has.
-    function viewPoints(address _user) public view returns (uint256) {
-        return points[_user];
+    function viewPoints(address _user, uint256 _proposalId) public view returns (uint256) {
+        return points[_proposalId][_user];
     }
 
-
+    
     function updatePoints(
         address _user,
         uint256 _points,
+        uint256 _proposalId,
         bool _bool
     ) public checkZero(_points)  onlyOwner {
         //if bool is true add to user points else subtract from user points
         if (_bool) {
-            points[_user] += _points;
+            points[_proposalId][_user] += _points;
             emit addPoint(_user, _points);
         } else {
-            emit removePoint(_user, viewPoints(_user));
-            points[_user] -= viewPoints(_user);
+            emit removePoint(_user, viewPoints(_user, _proposalId));
+            points[_proposalId][_user] -= viewPoints(_user, _proposalId);
         }
     }
 
