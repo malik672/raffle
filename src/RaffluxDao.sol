@@ -34,8 +34,6 @@ contract RaffluxDao is RafluxValidator{
     function startProposal(
         address _proposer,  
         string memory _description,
-        uint256 _startTime,
-        uint256 _endTime,
         uint256 _voteFor,
         uint256 _voteAgainst,
         uint256 _raffleId,
@@ -61,6 +59,7 @@ contract RaffluxDao is RafluxValidator{
     function Vote(uint256 _proposalId, bool _status) public {
       if(Validator.viewPoints(msg.sender, proposals[_proposalId].raffleId) < 10) revert transactReverted("you don't have enough points to vote");
       if(isValid[_proposalId] != true) revert transactReverted("proposalId not valid");
+      if(block.timestamp < proposals[_proposalId].endTime)revert transactReverted("proposal still active");
       if(proposals[_proposalId].voteAgainst >= proposals[_proposalId].voteFor)revert transactReverted("proposal did not pass");
       if(_status == true){
        proposals[_proposalId].voteFor++;

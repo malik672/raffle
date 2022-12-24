@@ -101,6 +101,9 @@ contract RaffluxMain is RafluxStorage {
     // Maps the proposal ID and user address to whether the user has bought a ticket for the raffle.
     mapping(uint256 => mapping(address => bool)) public hasTicket;
 
+    //map of address to bool used to set a validator
+    mapping(address => bool) public Validators;
+
     // Maps the proposal ID to the total amount of Ether collected for the raffle.
     mapping(uint256 => uint256) public totalAmount;
 
@@ -125,6 +128,7 @@ contract RaffluxMain is RafluxStorage {
     //map of address to bool, to blacklist an address
     mapping(address => bool) blacklist;
 
+
     //MODIFIERS
     modifier checksTime(uint256 _proposalId) {
         if (timeLeft(_proposalId) == 0) revert noTime("the raffle has closed");
@@ -138,7 +142,21 @@ contract RaffluxMain is RafluxStorage {
         _;
     }
 
+
     //FUNCTIONS
+
+    //this allos for the deposit of nft
+    function depositNft( address _tokenAddress, uint256 _tokenId, uint256 _proposalId) override public {
+             updatePoints(msg.sender, 10, _proposalId, true);
+        if (isERC721(_tokenAddress)) {
+            IERC721 Token = IERC721(_tokenAddress);
+            Token.safeTransferFrom(msg.sender, address(this), _tokenId);
+        } else if (isERC1155(_tokenAddress)) {
+            IERC1155 Tokens = IERC1155(_tokenAddress);
+            Tokens.safeTransferFrom(msg.sender, address(this), _tokenId, 1, "");
+        }
+    }
+
     /**
      * @dev Function to propose a raffle. Takes the description, owner, start and end time, maximum
      * number of tickets, ticket per user, prize token, token ID, and price per ticket as arguments.
@@ -184,7 +202,7 @@ contract RaffluxMain is RafluxStorage {
             )
         );
         isActive[startIndex] = true;
-        startIndex++;
+        raffles.length == 1 ? startIndex : startIndex++;
         emit Log_ProposeRaffle(
             _description,
             _owner,
@@ -196,17 +214,28 @@ contract RaffluxMain is RafluxStorage {
             _tokenId,
             _price
         );
-        (bool success, bytes memory data) = address(Storage).delegatecall(
-            abi.encodeWithSignature(
-                "depositNft(address, uint256)",
-                _prize,
-                _tokenId
-            )
-        );
-        if (success) revert transactReverted(string(data));
+        // (bool success, bytes memory data) = address(Storage).delegatecall(
+        //     abi.encodeWithSignature(
+        //         "depositNft(address, uint256)",
+        //         _prize,
+        //         _tokenId
+        //     )
+        // );
+        // if (success) revert transactReverted(string(data));
+        depositNft(_prize, _tokenId, startIndex);
     }
 
     function getRandomness() public {}
+
+    //this adds or remove status depending  on the value of _status
+    function changeValidator(address _user, bool _status) external {
+       Validators[_user] = _status;
+    }
+
+    //checks whether you are a validtaor or not
+    function checkValidator(address _validator) view external returns(bool){
+      return Validators[_validator];
+    }
 
     /**
      * @dev Function to buy a ticket for a raffle. Takes the proposal ID and the number of tickets to buy
@@ -265,6 +294,8 @@ contract RaffluxMain is RafluxStorage {
         ) revert transactReverted("maximum ticket reached");
         if (isActive[_proposalId] == true)
             revert transactReverted("raffle is no longer active");
+        updatePoints(msg.sender,10, _proposalId, false);
+        updatePoints(_receiver,10, _proposalId, true);
         hasTicket[_proposalId][msg.sender] = true;
         maximumUserTicket[_proposalId][_receiver] += 1;
         totalUserTicket[_proposalId][_receiver] += 1;
@@ -296,6 +327,7 @@ contract RaffluxMain is RafluxStorage {
         totalAmount[_proposalId] = totalAmount[_proposalId].sub(
             raffles[_proposalId].price
         );
+        updatePoints(msg.sender, 10, _proposalId, false);
         emit Log_RefundTicket(_proposalId, msg.sender, 1);
         (bool status, bytes memory data) = msg.sender.call{
             value: raffles[_proposalId].price
@@ -333,6 +365,11 @@ contract RaffluxMain is RafluxStorage {
         //this continue or stop a proposal
         raffles[_proposalId].stop = !raffles[_proposalId].stop;
         emit Log_ChangeProposalStatus(_proposalId, raffles[_proposalId].stop);
+    }
+
+    //this returns the status of the current proposal
+    function checkStatus(uint256 _proposalId) public view  returns(bool){
+        return raffles[_proposalId].stop;
     }
 
 

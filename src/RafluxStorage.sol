@@ -97,7 +97,7 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
     }
 
     //transfer nft from user to contract
-    function depositNft(address _tokenAddress, uint256 _tokenId, uint256 _proposalId) public onlyOwner {
+    function depositNft(address _tokenAddress, uint256 _tokenId, uint256 _proposalId) public virtual onlyOwner {
         updatePoints(msg.sender, 10, _proposalId, true);
         if (isERC721(_tokenAddress)) {
             IERC721 Token = IERC721(_tokenAddress);
@@ -137,8 +137,8 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
             points[_proposalId][_user] += _points;
             emit addPoint(_user, _points);
         } else {
-            emit removePoint(_user, viewPoints(_user, _proposalId));
-            points[_proposalId][_user] -= viewPoints(_user, _proposalId);
+            emit removePoint(_user, _points);
+            points[_proposalId][_user] -= _points;
         }
     }
 
