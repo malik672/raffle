@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+error pointRevert(string data);
+
 interface ITest {
     function isERC1155(address nftAddress) external returns (bool);
 
@@ -49,7 +51,7 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
     //MODIFIER
     //checks if points is zero
     modifier checkZero(uint256 _points) {
-        require(_points != 0, "can't be zero");
+        if(_points == 0) revert pointRevert("can't be zero");
         _;
     }
 

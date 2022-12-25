@@ -9,8 +9,6 @@ contract RafluxValidator is RaffluxMain {
         Main = new RaffluxMain();
     }
 
-
-
     //map of address to index
     mapping(address => uint256) public indexes;
 
