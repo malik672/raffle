@@ -35,10 +35,22 @@ contract RaffluxTest is Test {
 
     //checks whether it starts a raffle
     function testProposal() public {
-      vm.startPrank(myAddress);
+      // vm.startPrank(myAddress);
       writeTokenBalance(myAddress, address(punks), 0);
-      rafflux.proposeRaffle('testing a raffle', myAddress, block.timestamp, block.timestamp + 2000, 10, 1, address(punks), 4, 1 ether);
-      vm.stopPrank();
+      rafflux.proposeRaffle('testing a raffle', myAddress, block.timestamp, block.timestamp + 2000, 10, 10, address(punks), 4, 0 ether);
+      rafflux.buyTicket(0);
+      assertEq(rafflux.userTicket(0), 1);
+      console.log(msg.sender);
+      rafflux.delegateTicket(0, myAddress);
+      // assertEq(rafflux.startIndex, 1);
+      assertEq(punks.ownerOf(4), myAddress);
+      // vm.stopPrank();
+    }
+
+    //test the delegateTicket function 
+    function testDelegate() public {
+      //  vm.expectRevert();
+       
     }
 
     
@@ -46,26 +58,25 @@ contract RaffluxTest is Test {
       vm.startPrank(myAddress);
       assertGt(punks.balanceOf(myAddress), 1);
       assertEq(punks.ownerOf(4), myAddress);
-      // assertNotEq(address(Storage), address(0));
-      // punks.approve(address(Storage), 4);
+      punks.approve(address(rafflux), 4);
       // Storage.depositNft(address(punks), 4, 0);
       vm.stopPrank();
     }
 
-    //test points 
-    function testUpdatePointExpectedRevert() public {
-      // vm.expectRevert("can't be zero");
-      vm.prank(Storage.owner());
-      /*since the update functions and other mutable functions cann only be called by the owner, we will have to transfer ownership  */
-      Storage.updatePoints(myAddress, 10, 0,  true);
-      //check it add points
-      assertEq(Storage.viewPoints(myAddress, 0), 10);
-      //check it removes points
-      //the two(2) here is useless since the remove points remove all points a user has and equate it to zero
-      Storage.updatePoints(myAddress, 10,0, false);
-      // //check if point equal to zero after removal
-      assertEq(Storage.viewPoints(myAddress,0), 0);      
-    }
+    // //test points 
+    // function testUpdatePointExpectedRevert() public {
+    //   // vm.expectRevert("can't be zero");
+    //   vm.prank(Storage.owner());
+    //   /*since the update functions and other mutable functions cann only be called by the owner, we will have to transfer ownership  */
+    //   Storage.updatePoints(myAddress, 10, 0,  true);
+    //   //check it add points
+    //   assertEq(Storage.viewPoints(myAddress, 0), 10);
+    //   //check it removes points
+    //   //the two(2) here is useless since the remove points remove all points a user has and equate it to zero
+    //   Storage.updatePoints(myAddress, 10,0, false);
+    //   // //check if point equal to zero after removal
+    //   assertEq(Storage.viewPoints(myAddress,0), 0);      
+    // }
 
     // function testDeposit() public {};
 }

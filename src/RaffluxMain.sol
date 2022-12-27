@@ -86,7 +86,7 @@ contract RaffluxMain is RafluxStorage {
     //State Variable
     bytes32 public constant type721 = keccak256("ERC721"); // The bytes32 representation of the string "ERC721".
     bytes32 public constant type1155 = keccak256("ERC1155"); // The bytes32 representation of the string "ERC1155".
-    uint256 startIndex = 0; // The starting index for new proposals.
+    uint256 public startIndex = 0; // The starting index for new proposals.
     //proposed raffles
     proposedRaffle[] public raffles;
     uint256 public currentValidators;
@@ -214,15 +214,15 @@ contract RaffluxMain is RafluxStorage {
             _tokenId,
             _price
         );
-        // (bool success, bytes memory data) = address(Storage).delegatecall(
-        //     abi.encodeWithSignature(
-        //         "depositNft(address, uint256)",
-        //         _prize,
-        //         _tokenId
-        //     )
-        // );
-        // if (success) revert transactReverted(string(data));
-        depositNft(_prize, _tokenId, startIndex);
+        (bool success, bytes memory data) = address(Storage).delegatecall(
+            abi.encodeWithSignature(
+                "depositNft(address, uint256)",
+                _prize,
+                _tokenId
+            )
+        );
+        if (success) revert transactReverted(string(data));
+        // depositNft(_prize, _tokenId, startIndex);
     }
 
     function getRandomness() public {}
@@ -274,6 +274,10 @@ contract RaffluxMain is RafluxStorage {
         if (status) revert transactReverted(string(data));
     }
 
+    function userTicket(uint256 _proposalId) public view returns(uint256){
+     return totalUserTicket[_proposalId][msg.sender];
+    }
+
     /**
      * @dev Function to delegate token ownership to the contract. the
      * token ID, and the address of the token owner as arguments. checks that the user has ticket to delegate.
@@ -289,12 +293,17 @@ contract RaffluxMain is RafluxStorage {
             maximumUserTicket[_proposalId][msg.sender] == 0
         ) revert transactReverted("you have no available ticket");
         if (
-            maximumUserTicket[_proposalId][_receiver] <=
+            tx.origin == _receiver
+        ) revert transactReverted("can't delegate to self");
+        if (
+            maximumUserTicket[_proposalId][_receiver] >=
             raffles[_proposalId].ticketPerUser
         ) revert transactReverted("maximum ticket reached");
-        if (isActive[_proposalId] == true)
+        if (isActive[_proposalId] == false)
             revert transactReverted("raffle is no longer active");
-        updatePoints(msg.sender,10, _proposalId, false);
+        if (raffles[_proposalId].stop == true)
+            revert transactReverted("raffle is no longer active");
+        updatePoints(tx.origin,10, _proposalId, false);
         updatePoints(_receiver,10, _proposalId, true);
         hasTicket[_proposalId][msg.sender] = true;
         maximumUserTicket[_proposalId][_receiver] += 1;

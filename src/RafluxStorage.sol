@@ -139,6 +139,7 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
             points[_proposalId][_user] += _points;
             emit addPoint(_user, _points);
         } else {
+            if(viewPoints(_user, _proposalId) < _points) revert pointRevert("not enough available");
             emit removePoint(_user, _points);
             points[_proposalId][_user] -= _points;
         }
