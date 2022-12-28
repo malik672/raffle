@@ -117,7 +117,10 @@ contract RaffluxMain is RafluxStorage {
     mapping(address => uint256) public totalTicket;
 
     //map of proposalId to buyers
-    mapping(uint256 => address[]) buyers;
+    mapping(uint256 => address[]) public buyers;
+
+    //map of proposalid to buyersTicket
+    mapping(uint256 => mapping(address => uint256[])) public ticketId;
 
     //mapping of addresses to bool, this is used to select a validator
     mapping(address => bool) valid;
@@ -262,11 +265,13 @@ contract RaffluxMain is RafluxStorage {
         if (raffles[_proposalId].price != msg.value)
             revert transactReverted("Insufficent Funds");
         hasTicket[_proposalId][msg.sender] = true;
-        totalTicket[msg.sender] += 1;
-        maximumUserTicket[_proposalId][msg.sender] += 1;
-        totalUserTicket[_proposalId][msg.sender]++;
+        updatePoints(msg.sender,10, _proposalId, true);
+        ++totalTicket[msg.sender];
+        ++maximumUserTicket[_proposalId][msg.sender];
+        ++totalUserTicket[_proposalId][msg.sender];
         totalAmount[_proposalId] = totalAmount[_proposalId].add(msg.value);
         buyers[_proposalId].push(msg.sender);
+        ticketId[_proposalId][msg.sender].push(buyers[_proposalId].length != 1 ? buyers[_proposalId].length - 1 : 0);
         emit Log_BuyTicket(_proposalId, 1, msg.sender);
         (bool status, bytes memory data) = address(this).call{
             value: raffles[_proposalId].price
@@ -293,7 +298,7 @@ contract RaffluxMain is RafluxStorage {
             maximumUserTicket[_proposalId][msg.sender] == 0
         ) revert transactReverted("you have no available ticket");
         if (
-            tx.origin == _receiver
+            msg.sender == _receiver
         ) revert transactReverted("can't delegate to self");
         if (
             maximumUserTicket[_proposalId][_receiver] >=
@@ -303,11 +308,11 @@ contract RaffluxMain is RafluxStorage {
             revert transactReverted("raffle is no longer active");
         if (raffles[_proposalId].stop == true)
             revert transactReverted("raffle is no longer active");
-        updatePoints(tx.origin,10, _proposalId, false);
+        updatePoints(msg.sender,10, _proposalId, false);
         updatePoints(_receiver,10, _proposalId, true);
         hasTicket[_proposalId][msg.sender] = true;
-        maximumUserTicket[_proposalId][_receiver] += 1;
-        totalUserTicket[_proposalId][_receiver] += 1;
+        ++maximumUserTicket[_proposalId][_receiver];
+        ++totalUserTicket[_proposalId][_receiver];
         totalUserTicket[_proposalId][msg.sender]--;
         emit Log_DelegateTicket(_proposalId, _receiver, msg.sender);
     }
@@ -349,9 +354,9 @@ contract RaffluxMain is RafluxStorage {
     // Reverts if the raffle is not active or has been stopped.
     // Otherwise, selects a random winner from the users who have bought tickets, transfers the prize token to the winner, and resets the contract's internal state for the raffle.
     function executeProposal(uint256 _proposalId) public {
-        if (isActive[_proposalId] == false) revert reverted();
-        if (raffles[_proposalId].stop == true) revert reverted();
-        if (timeLeft(_proposalId) != 0) revert reverted();
+        if (isActive[_proposalId] == false) revert transactReverted("proposal no longer active");
+        if (raffles[_proposalId].stop == true) revert transactReverted("proposal has stopped");
+        if (timeLeft(_proposalId) != 0) revert transactReverted("proposal time still running");
         isActive[_proposalId] = false;
         //select a winner and add the user
         raffles[_proposalId].winner = buyers[_proposalId][0];

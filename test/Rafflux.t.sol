@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import {RaffluxDao} from "../src/RaffluxDao.sol";
+import {RaffluxMain} from "../src/RaffluxMain.sol";
 
 //this a custom nft created on the polygon testnet used to test this
 interface myNfts {
@@ -14,6 +15,7 @@ interface myNfts {
 
 contract RaffluxTest is Test {
     RaffluxDao rafflux;
+    RaffluxMain main;
     address public address1;
     address public address2;
     using stdStorage for StdStorage;
@@ -23,6 +25,7 @@ contract RaffluxTest is Test {
     
     function setUp() public {
         rafflux = new RaffluxDao();
+        main = new RaffluxMain();
     }
 
     function writeTokenBalance(address who, address token, uint256 amt) internal {
@@ -33,18 +36,33 @@ contract RaffluxTest is Test {
           .checked_write(amt);
     }
 
+    function writeProposal(uint256 _proposalId) internal {
+      stdstore
+        .target(address(main))
+        .sig(main.buyers.selector)
+        .with_key(_proposalId)
+        .checked_write(address(0));
+    }
+
     //checks whether it starts a raffle
-    function testProposal() public {
-      // vm.startPrank(myAddress);
+    function testRaffleProposal() public {
+      vm.startPrank(myAddress);
       writeTokenBalance(myAddress, address(punks), 0);
-      rafflux.proposeRaffle('testing a raffle', myAddress, block.timestamp, block.timestamp + 2000, 10, 10, address(punks), 4, 0 ether);
-      rafflux.buyTicket(0);
-      assertEq(rafflux.userTicket(0), 1);
-      console.log(msg.sender);
-      rafflux.delegateTicket(0, myAddress);
+      main.proposeRaffle('testing a raffle', myAddress, block.timestamp, block.timestamp + 1000, 10, 10, address(punks), 4, 0 ether);
+      main.buyTicket(0);
+      assertEq(main.userTicket(0), 1);
+      main.delegateTicket(0, address(punks));
       // assertEq(rafflux.startIndex, 1);
       assertEq(punks.ownerOf(4), myAddress);
-      // vm.stopPrank();
+      vm.stopPrank();
+    }
+
+    //checks whether the proposal is valid for execution
+    function testExecuteProposal() public {
+      main.proposeRaffle('testing a raffle', myAddress, 0, 0, 10, 10, address(punks), 4, 0 ether);
+      writeProposal(0);
+      // console.log(main.raffles[0].startTime);
+      main.executeProposal(1);
     }
 
     //test the delegateTicket function 

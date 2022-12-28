@@ -133,7 +133,7 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
         uint256 _points,
         uint256 _proposalId,
         bool _bool
-    ) public checkZero(_points)  onlyOwner {
+    ) public checkZero(_points)   {
         //if bool is true add to user points else subtract from user points
         if (_bool) {
             points[_proposalId][_user] += _points;
