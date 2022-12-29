@@ -131,6 +131,8 @@ contract RaffluxMain is RafluxStorage {
     //map of address to bool, to blacklist an address
     mapping(address => bool) blacklist;
 
+    //map of uint256 to uint256 this is used to check the totalSupply based on each proposalId
+    mapping(uint256 => uint256) totalSupply;
 
     //MODIFIERS
     modifier checksTime(uint256 _proposalId) {
@@ -270,6 +272,7 @@ contract RaffluxMain is RafluxStorage {
         ++maximumUserTicket[_proposalId][msg.sender];
         ++totalUserTicket[_proposalId][msg.sender];
         totalAmount[_proposalId] = totalAmount[_proposalId].add(msg.value);
+        
         buyers[_proposalId].push(msg.sender);
         ticketId[_proposalId][msg.sender].push(buyers[_proposalId].length != 1 ? buyers[_proposalId].length - 1 : 0);
         emit Log_BuyTicket(_proposalId, 1, msg.sender);
@@ -293,27 +296,76 @@ contract RaffluxMain is RafluxStorage {
      * @param _receiver the receiver of the ticket.
      */
     function delegateTicket(uint256 _proposalId, address _receiver) public {
+
+        // Get the index of the last ticket ID in the ticketId array for the caller
+        uint256 lastTicketIdIndex = ticketId[_proposalId][msg.sender].length <= 1 ? 0 : ticketId[_proposalId][msg.sender].length - 1;
+
+        // Get the index of the last buyer in the buyers array
+        uint256 lastBuyerIndex = buyers[_proposalId].length <= 1 ? 0 : buyers[_proposalId].length - 1;
+
+        //Get the last item in the array for the caller
+        uint256 ticketIdIndex = ticketId[_proposalId][msg.sender][lastTicketIdIndex];
+
+        // Check if the caller has any available tickets
         if (
             totalUserTicket[_proposalId][msg.sender] == 0 ||
             maximumUserTicket[_proposalId][msg.sender] == 0
         ) revert transactReverted("you have no available ticket");
+
+        // Check if the caller and receiver are the same address
         if (
             msg.sender == _receiver
         ) revert transactReverted("can't delegate to self");
+
+        // Check if the receiver has reached the maximum number of tickets allowed
         if (
             maximumUserTicket[_proposalId][_receiver] >=
             raffles[_proposalId].ticketPerUser
         ) revert transactReverted("maximum ticket reached");
+
+        // Check if the raffle is active
         if (isActive[_proposalId] == false)
             revert transactReverted("raffle is no longer active");
+
+        // Check if the raffle has been stopped
         if (raffles[_proposalId].stop == true)
             revert transactReverted("raffle is no longer active");
+        
+        // Update the points for the caller and receiver
         updatePoints(msg.sender,10, _proposalId, false);
         updatePoints(_receiver,10, _proposalId, true);
-        hasTicket[_proposalId][msg.sender] = true;
+
+        
+        // If the caller only has one ticket, remove it from the buyers and ticketId arrays and add it to the receiver's ticketId array      
+        if(buyers[_proposalId][ticketId[_proposalId][msg.sender][lastBuyerIndex]] == msg.sender){
+            // Remove the ticket from the buyers and ticketId arrays for the caller
+             buyers[_proposalId].pop();
+             ticketId[_proposalId][msg.sender].pop();
+             // Add the ticket to the receivers ticketId array
+             buyers[_proposalId].push(_receiver);
+             ticketId[_proposalId][_receiver].push(lastTicketIdIndex);
+        }else {
+           // Add the ticket to the receivers ticketId array
+           buyers[_proposalId][ticketIdIndex ] = _receiver;
+           // Add the ticket to the receivers ticketId array
+           ticketId[_proposalId][_receiver].push(ticketIdIndex);
+           // Remove the ticket from the caller's ticketId array
+           ticketId[_proposalId][msg.sender].pop();
+
+        }
+        // Update the ticket ownership for the _receiver
+        hasTicket[_proposalId][_receiver] = true;
+        // Increment the maximum ticket count for the receiver
         ++maximumUserTicket[_proposalId][_receiver];
+        // Increment the total ticket count for the receiver
         ++totalUserTicket[_proposalId][_receiver];
+        // Decrement the total ticket count for the caller
         totalUserTicket[_proposalId][msg.sender]--;
+        //if this is the last ticket of the user update ownership to false
+        if (totalUserTicket[_proposalId][msg.sender] == 0) {
+            hasTicket[_proposalId][msg.sender] = false;
+        }
+        // Emit an event for the ticket delegation
         emit Log_DelegateTicket(_proposalId, _receiver, msg.sender);
     }
  
@@ -327,25 +379,61 @@ contract RaffluxMain is RafluxStorage {
     // Reverts if the raffle is not stopped or the user has not bought a ticket.
     // Otherwise, updates the contract's internal state and sends the refund to the user.
     function refundTicket(uint256 _proposalId) public checksTime(_proposalId) {
+        // Get the index of the last ticket ID in the ticketId array for the caller
+        uint256 lastTicketIdIndex = ticketId[_proposalId][msg.sender].length <= 1 ? 0 : ticketId[_proposalId][msg.sender].length - 1;
+
+        // Get the index of the last buyer in the buyers array
+        uint256 lastBuyerIndex = buyers[_proposalId].length <= 1 ? 0 : buyers[_proposalId].length - 1;
+
+        //Get the last item in the array for the caller
+        uint256 ticketIdIndex = ticketId[_proposalId][msg.sender][lastTicketIdIndex];
+
+        //check if the user has tickets
         if (
             totalUserTicket[_proposalId][msg.sender] == 0 ||
             maximumUserTicket[_proposalId][msg.sender] == 0
         ) revert transactReverted("you have no available ticket");
-        if (isActive[_proposalId] == true)
+        //check if proposal is still active 
+        if (isActive[_proposalId] == false)
             revert transactReverted("raffle is no longer active");
-        maximumUserTicket[_proposalId][msg.sender] -= 1;
-        totalUserTicket[_proposalId][msg.sender] -= 1;
+        //decrement  maximumticket for the caller since its a refund
+        maximumUserTicket[_proposalId][msg.sender]--;
+        //decrement totalticket for the user
+        totalUserTicket[_proposalId][msg.sender]--;
+        //if this is the last ticket of the user update ownership to false
         if (totalUserTicket[_proposalId][msg.sender] == 0) {
             hasTicket[_proposalId][msg.sender] = false;
         }
         totalAmount[_proposalId] = totalAmount[_proposalId].sub(
             raffles[_proposalId].price
         );
+        // Update the points for the caller and receiver
         updatePoints(msg.sender, 10, _proposalId, false);
+        // Emit an event for the refund ticket
         emit Log_RefundTicket(_proposalId, msg.sender, 1);
+        // If the caller only has one ticket, remove it from the buyers and ticketId arrays  
+        if(buyers[_proposalId][ticketId[_proposalId][msg.sender][lastBuyerIndex]] == msg.sender){
+            // Remove the ticket from the buyers and ticketId arrays for the caller
+             buyers[_proposalId].pop();
+             ticketId[_proposalId][msg.sender].pop();
+        }else {
+           //last buyers index
+           address lastAddress = buyers[_proposalId][lastBuyerIndex];
+           //replace the last address with the user address
+           buyers[_proposalId][lastBuyerIndex] = buyers[_proposalId][ticketIdIndex];
+           //replace the userPositionIndex with the last address
+           buyers[_proposalId][ticketIdIndex] = lastAddress;
+           // Remove the ticket from the caller's ticketId array
+           ticketId[_proposalId][msg.sender].pop();
+           //remove the last item from the buyers array
+           buyers[_proposalId].pop();
+
+        }
+        //transfer ticket fee back to user
         (bool status, bytes memory data) = msg.sender.call{
             value: raffles[_proposalId].price
         }("");
+        //revert if not succesful
         if (status) revert transactReverted(string(data)); 
     }
 
