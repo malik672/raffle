@@ -24,7 +24,7 @@ error noTime(bytes32 data);
  * chosen and the prize token is transferred to them.
  */
 contract RaffluxMain is RafluxStorage {
-    RafluxStorage Storage;
+    RafluxStorage public Storage;
     using SafeMath for uint256;
 
     /**
@@ -117,7 +117,7 @@ contract RaffluxMain is RafluxStorage {
     mapping(address => uint256) public totalTicket;
 
     //map of proposalId to buyers
-    mapping(uint256 => address[]) public buyers;
+    mapping(uint256 => address[]) private buyers;
 
     //map of proposalid to buyersTicket
     mapping(uint256 => mapping(address => uint256[])) public ticketId;
@@ -219,15 +219,15 @@ contract RaffluxMain is RafluxStorage {
             _tokenId,
             _price
         );
-        (bool success, bytes memory data) = address(Storage).delegatecall(
-            abi.encodeWithSignature(
-                "depositNft(address, uint256)",
-                _prize,
-                _tokenId
-            )
-        );
-        if (success) revert transactReverted(string(data));
-        // depositNft(_prize, _tokenId, startIndex);
+        // (bool success, bytes memory data) = address(Storage).delegatecall(
+        //     abi.encodeWithSignature(
+        //         "depositNft(address, uint256)",
+        //         _prize,
+        //         _tokenId
+        //     )
+        // );
+        // if (success) revert transactReverted(string(data));
+        depositNft(_prize, _tokenId, startIndex);
     }
 
     function getRandomness() public {}
@@ -240,6 +240,11 @@ contract RaffluxMain is RafluxStorage {
     //checks whether you are a validtaor or not
     function checkValidator(address _validator) view external returns(bool){
       return Validators[_validator];
+    }
+
+    //
+    function buyersOf(uint256 _proposalId, uint256 _index) view public returns(address) {
+       return buyers[_proposalId][_index];
     }
 
     /**
@@ -275,6 +280,7 @@ contract RaffluxMain is RafluxStorage {
         
         buyers[_proposalId].push(msg.sender);
         ticketId[_proposalId][msg.sender].push(buyers[_proposalId].length != 1 ? buyers[_proposalId].length - 1 : 0);
+        isActive[_proposalId] = true;
         emit Log_BuyTicket(_proposalId, 1, msg.sender);
         (bool status, bytes memory data) = address(this).call{
             value: raffles[_proposalId].price
@@ -372,6 +378,10 @@ contract RaffluxMain is RafluxStorage {
     //this function checks if a user can vote on a raffleId;
     function canVote(uint256 _raffleId) external {
        canVotes[_raffleId] = true;
+    }
+
+    function thisMain() public view returns(address){
+        return address(this);
     }
 
     // Function to refund a ticket if the raffle is stopped before it ends.

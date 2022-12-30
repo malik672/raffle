@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import {RaffluxDao} from "../src/RaffluxDao.sol";
 import {RaffluxMain} from "../src/RaffluxMain.sol";
+import {RafluxStorage} from "../src/RafluxStorage.sol";
 
 //this a custom nft created on the polygon testnet used to test this
 interface myNfts {
@@ -24,6 +25,7 @@ contract RaffluxTest is Test {
 
     
     function setUp() public {
+        // rStorage = new RafluxStorage();
         rafflux = new RaffluxDao();
         main = new RaffluxMain();
     }
@@ -37,32 +39,43 @@ contract RaffluxTest is Test {
     }
 
     function writeProposal(uint256 _proposalId) internal {
+     address[] memory buy;
+
       stdstore
         .target(address(main))
-        .sig(main.buyers.selector)
+        .sig(main.buyersOf.selector)
         .with_key(_proposalId)
         .checked_write(address(0));
     }
 
-    //checks whether it starts a raffle
-    function testRaffleProposal() public {
-      vm.startPrank(myAddress);
-      writeTokenBalance(myAddress, address(punks), 0);
-      main.proposeRaffle('testing a raffle', myAddress, block.timestamp, block.timestamp + 1000, 10, 10, address(punks), 4, 0 ether);
-      main.buyTicket(0);
-      assertEq(main.userTicket(0), 1);
-      main.delegateTicket(0, address(punks));
-      // assertEq(rafflux.startIndex, 1);
-      assertEq(punks.ownerOf(4), myAddress);
-      vm.stopPrank();
-    }
+    // //checks whether it starts a raffle
+    // function testRaffleProposal() public {
+    //   vm.startPrank(myAddress);
+    //   writeTokenBalance(myAddress, address(punks), 0);
+    //   main.proposeRaffle('testing a raffle', myAddress, block.timestamp, block.timestamp + 1000, 10, 10, address(punks), 4, 0 ether);
+    //   main.buyTicket(0);
+    //   assertEq(main.userTicket(0), 1);
+    //   main.delegateTicket(0, address(punks));
+    //   // assertEq(rafflux.startIndex, 1);
+    //   assertEq(punks.ownerOf(4), myAddress);
+    //   vm.stopPrank();
+    // }
 
     //checks whether the proposal is valid for execution
     function testExecuteProposal() public {
-      main.proposeRaffle('testing a raffle', myAddress, 0, 0, 10, 10, address(punks), 4, 0 ether);
-      writeProposal(0);
-      // console.log(main.raffles[0].startTime);
-      main.executeProposal(1);
+      testDeposit();
+      vm.startPrank(myAddress);
+      console.log(main.thisStorage(), main.thisMain());
+      
+      // punks.approve(address(main), 3);
+      // punks.approve(0x9cC6334F1A7Bc20c9Dde91Db536E194865Af0067, 3);
+      // punks.approve(main.thisStorage, 3);
+      // main.proposeRaffle('testing a raffle', myAddress, 0, 1, 10, 10, address(punks), 3, 0 ether);
+      // vm.stopPrank();
+      // main.buyTicket(0);
+      // skip(1000);
+      // main.executeProposal(0);
+      // console.log(main.timeLeft(0));
     }
 
     //test the delegateTicket function 
@@ -75,8 +88,9 @@ contract RaffluxTest is Test {
     function testDeposit() public {
       vm.startPrank(myAddress);
       assertGt(punks.balanceOf(myAddress), 1);
-      assertEq(punks.ownerOf(4), myAddress);
-      punks.approve(address(rafflux), 4);
+      assertEq(punks.ownerOf(3), myAddress);
+      punks.approve(0x9cC6334F1A7Bc20c9Dde91Db536E194865Af0067, 3);
+      punks.approve(address(main), 3);
       // Storage.depositNft(address(punks), 4, 0);
       vm.stopPrank();
     }

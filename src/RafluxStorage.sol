@@ -28,7 +28,7 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
     // - IID_IERC165: the interface ID of the IERC165 interface
     // - IID_IERC1155: the interface ID of the IERC1155 interface
     // - IID_IERC721: the interface ID of the IERC721 interface
-    address public caller;
+    address public  caller;
     bytes4 public constant IID_ITEST = type(ITest).interfaceId;
     bytes4 public constant IID_IERC165 = type(IERC165).interfaceId;
     bytes4 public constant IID_IERC1155 = type(IERC1155).interfaceId;
@@ -87,6 +87,10 @@ contract RafluxStorage is IERC721Receiver,IERC1155Receiver,Ownable {
         return this.onERC721Received.selector;
     }
 
+    //
+    function thisStorage() public view returns(address){
+        return address(this);
+    }
     //FUNCTIONS
     //check if the token is an erc721 token
     function isERC721(address nftAddress) public view returns (bool) {
