@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import {RaffluxDao} from "../src/RaffluxDao.sol";
 import {RaffluxMain} from "../src/RaffluxMain.sol";
+import {RaffluxValidator} from "../src/RaffluxValidator.sol";
 
 //this a custom nft created on the polygon testnet used to test this
 interface myNfts {
@@ -16,6 +17,7 @@ interface myNfts {
 contract RaffluxTest is Test {
     RaffluxDao rafflux;
     RaffluxMain main;
+    RaffluxValidator validator;
     address public address1;
     address public address2;
     using stdStorage for StdStorage;
@@ -26,6 +28,7 @@ contract RaffluxTest is Test {
     function setUp() public {
         rafflux = new RaffluxDao();
         main = new RaffluxMain();
+        validator = new RaffluxValidator();
     }
 
     function writeTokenBalance(address who, address token, uint256 amt) internal {
@@ -106,5 +109,7 @@ contract RaffluxTest is Test {
     //   assertEq(Storage.viewPoints(myAddress,0), 0);      
     // }
 
-    // function testDeposit() public {};
+    function testAddValidator() public {
+
+    }
 }

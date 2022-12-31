@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8;
 
-import "./RafluxValidator.sol";
-contract RaffluxDao is RafluxValidator{
-    RafluxValidator Validator;
+import "./RaffluxValidator.sol";
+contract RaffluxDao is RaffluxValidator{
+    RaffluxValidator Validator;
 
     constructor() public {
-        Validator = new RafluxValidator();
+        Validator = new RaffluxValidator();
     }
 
     //Mapping of proposald to boolean

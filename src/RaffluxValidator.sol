@@ -2,7 +2,7 @@
 pragma solidity ^0.8;
 
 import "./RaffluxMain.sol";
-contract RafluxValidator is RaffluxMain {
+contract RaffluxValidator is RaffluxMain {
      RaffluxMain Main;
 
     constructor() public {
@@ -15,6 +15,10 @@ contract RafluxValidator is RaffluxMain {
     //state Variables
     address[] public currentsValidator;
     uint256 public current;
+
+    //Events
+    event Log_addValidator(address indexed _validator, uint256 _validatorIndex);
+    event Log_removeValidator(address indexed _validator, uint256 _validatorIndex);
   
     //add validators
     function addValidators(address _validator) public {
@@ -25,6 +29,7 @@ contract RafluxValidator is RaffluxMain {
         currentsValidator.push(_validator);
         currentsValidator.length == 1 ? current : current++;
         indexes[_validator] = current;
+        emit Log_addValidator(_validator, current);
     }
 
     /// @notice Explain tontract name)
@@ -48,5 +53,6 @@ contract RafluxValidator is RaffluxMain {
         for (uint256 i = 0; i < currentsValidator.length; i++) {
             indexes[currentsValidator[i]] = i;
         }
+        emit Log_removeValidator(_validator, current);
     }
 }
