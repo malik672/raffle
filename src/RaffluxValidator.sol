@@ -21,15 +21,15 @@ contract RaffluxValidator is RaffluxMain {
     event Log_removeValidator(address indexed _validator, uint256 _validatorIndex);
   
     //add validators
-    function addValidators(address _validator) public {
+    function addValidators() public {
         if (current == 7) revert transactReverted("maximum validators reached");
-        if (Main.checkValidator(_validator) == true)
+        if (Main.checkValidator(msg.sender) == true)
             revert transactReverted("already a validator");
-        Main.changeValidator(_validator, true);
-        currentsValidator.push(_validator);
+        Main.changeValidator(msg.sender, true);
+        currentsValidator.push(msg.sender);
         currentsValidator.length == 1 ? current : current++;
-        indexes[_validator] = current;
-        emit Log_addValidator(_validator, current);
+        indexes[msg.sender] = current;
+        emit Log_addValidator(msg.sender, current);
     }
 
     /// @notice Explain tontract name)
@@ -39,14 +39,14 @@ contract RaffluxValidator is RaffluxMain {
         if (Main.checkValidator(_validator) == false)
             revert transactReverted("this address is not a validator");
         if (indexes[_validator] == current) {
-            Validators[_validator] = false;
+            Main.changeValidator(_validator, false);
             currentsValidator.length == 1 ? current : current--;
             currentsValidator.pop();
         } else {
             uint256 address1 = indexes[_validator];
             address address2 = currentsValidator[currentsValidator.length - 1];
             currentsValidator[address1] = address2;
-            Validators[_validator] = false;
+            Main.changeValidator(_validator, false);
             currentsValidator.pop();
             current--;
         }
@@ -54,5 +54,22 @@ contract RaffluxValidator is RaffluxMain {
             indexes[currentsValidator[i]] = i;
         }
         emit Log_removeValidator(_validator, current);
+    }
+
+    function removeAllValidator() external {
+        address[] memory empty;
+        for (uint256 i = 0; i < currentsValidator.length; i++) {
+            Main.changeValidator(currentsValidator[i], false);
+            emit Log_removeValidator(currentsValidator[i], i);
+        }
+        currentsValidator = empty;
+    }
+
+    function checkValidator() public view returns(bool) {
+      return Main.checkValidator(msg.sender);
+    }
+
+    function returnValidators() public view returns(address[] memory){
+        return currentsValidator;
     }
 }

@@ -123,7 +123,7 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
     mapping(uint256 => mapping(address => bool)) public hasTicket;
 
     //map of address to bool used to set a validator
-    mapping(address => bool) public Validators;
+    mapping(address => bool) private Validators;
 
     // Maps the proposal ID to the total amount of Ether collected for the raffle.
     mapping(uint256 => uint256) public totalAmount;
@@ -144,22 +144,22 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
     mapping(uint256 => mapping(address => uint256[])) public ticketId;
 
     //mapping of addresses to bool, this is used to select a validator
-    mapping(address => bool) valid;
+    mapping(address => bool) private valid;
 
     //map of proposalId to
-    mapping(uint256 => bool) isActive;
+    mapping(uint256 => bool) private isActive;
 
     //map of address to bool, to blacklist an address
-    mapping(address => bool) blacklist;
+    mapping(address => bool) private blacklist;
 
     //map of uint256 to uint256 this is used to check the totalSupply based on each proposalId
-    mapping(uint256 => uint256) totalSupply;
+    mapping(uint256 => uint256) private totalSupply;
 
     // A mapping to track the number of points that each address has.
-    mapping(uint256 => mapping(address => uint256)) points;
+    mapping(uint256 => mapping(address => uint256)) private points;
 
     // A mapping of conc address to user address to token
-    mapping(address => mapping(address => uint256)) checks;
+    mapping(address => mapping(address => uint256)) private checks;
 
     //MODIFIERS
     modifier checksTime(uint256 _proposalId) {

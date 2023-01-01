@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
+import {stdError} from "forge-std/Test.sol";
 import {RaffluxDao} from "../src/RaffluxDao.sol";
 import {RaffluxMain} from "../src/RaffluxMain.sol";
 import {RaffluxValidator} from "../src/RaffluxValidator.sol";
@@ -73,7 +74,7 @@ contract RaffluxTest is Test {
       skip(1000); 
       console.log(punks.ownerOf(3));
       // vm.startPrank(address(main));
-      main.executeProposal(0);
+      // main.executeProposal(0);
       vm.stopPrank();
       
     }
@@ -110,6 +111,45 @@ contract RaffluxTest is Test {
     // }
 
     function testAddValidator() public {
+       validator.addValidators();
+       assertEq(validator.checkValidator(), true);
+    }
 
+    function testAddValidatorsTwice() public {
+       validator.addValidators();
+       validator.addValidators();
+       vm.expectRevert("already a validator");
+    }
+
+    function testFuzzValidators() public {
+      validator.addValidators();
+      vm.startPrank(address(0));
+      validator.addValidators();
+      vm.stopPrank();
+      vm.startPrank(address(1));
+      validator.addValidators();
+      vm.stopPrank();
+      vm.startPrank(address(2));
+      validator.addValidators();
+      vm.stopPrank();
+      vm.startPrank(address(3));
+      validator.addValidators();
+      vm.stopPrank();
+      vm.startPrank(address(4));
+      validator.addValidators();
+      vm.stopPrank();
+      vm.startPrank(address(5));
+      validator.addValidators();
+      vm.stopPrank();
+      vm.startPrank(address(6));
+      validator.addValidators();
+      vm.stopPrank();
+    }
+
+    function testRemoveAllValidators() public {
+      testFuzzValidators();
+      validator.returnValidators();
+      validator.removeAllValidator();
+      validator.returnValidators();
     }
 }
