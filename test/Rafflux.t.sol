@@ -48,18 +48,13 @@ contract RaffluxTest is Test {
         .checked_write(address(0));
     }
 
-    // //checks whether it starts a raffle
-    // function testRaffleProposal() public {
-    //   vm.startPrank(myAddress);
-    //   writeTokenBalance(myAddress, address(punks), 0);
-    //   main.proposeRaffle('testing a raffle', myAddress, block.timestamp, block.timestamp + 1000, 10, 10, address(punks), 4, 0 ether);
-    //   main.buyTicket(0);
-    //   assertEq(main.userTicket(0), 1);
-    //   main.delegateTicket(0, address(punks));
-    //   // assertEq(rafflux.startIndex, 1);
-    //   assertEq(punks.ownerOf(4), myAddress);
-    //   vm.stopPrank();
-    // }
+    //checks whether it starts a raffle
+    function testRaffleStartProposal() public {
+      testDeposit();
+      vm.startPrank(myAddress);
+      main.proposeRaffle('testing a raffle', myAddress, block.timestamp, block.timestamp + 1000, 10, 10, address(punks), 3, 0 ether);
+      vm.stopPrank();
+    }
 
     //checks whether the proposal is valid for execution
     function testExecuteProposal() public {
@@ -95,19 +90,17 @@ contract RaffluxTest is Test {
       vm.stopPrank();
     }
 
-    // //test points 
+    //test points 
     // function testUpdatePointExpectedRevert() public {
     //   // vm.expectRevert("can't be zero");
-    //   vm.prank(Storage.owner());
-    //   /*since the update functions and other mutable functions cann only be called by the owner, we will have to transfer ownership  */
-    //   Storage.updatePoints(myAddress, 10, 0,  true);
+    //   vm.prank(address(main));
     //   //check it add points
-    //   assertEq(Storage.viewPoints(myAddress, 0), 10);
+    //   assertEq(main.viewPoints(myAddress, 0), 10);
     //   //check it removes points
     //   //the two(2) here is useless since the remove points remove all points a user has and equate it to zero
-    //   Storage.updatePoints(myAddress, 10,0, false);
+    //   main.updatePoints(myAddress, 10,0, false);
     //   // //check if point equal to zero after removal
-    //   assertEq(Storage.viewPoints(myAddress,0), 0);      
+    //   assertEq(main.viewPoints(myAddress,0), 0);      
     // }
 
     function testAddValidator() public {
@@ -151,5 +144,30 @@ contract RaffluxTest is Test {
       validator.returnValidators();
       validator.removeAllValidator();
       validator.returnValidators();
+    }
+
+    function testValidatorProposal() public {
+
+    }
+
+    function testValidatorDeposit() public {
+      vm.startPrank(myAddress);
+      assertGt(punks.balanceOf(myAddress), 1);
+      assertEq(punks.ownerOf(3), myAddress);
+      punks.approve(address(validator), 3);
+      // Storage.depositNft(address(punks), 4, 0);
+      vm.stopPrank();
+    }
+
+    function testStopProposal() public {
+        testValidatorDeposit();
+        vm.startPrank(address(validator));
+        validator.addValidators();
+        validator.changeProposalStatus(0);
+        vm.stopPrank();
+    }
+
+    function testContinueProposal() public {
+
     }
 }

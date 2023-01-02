@@ -77,7 +77,7 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
         uint256 _amount,
         address indexed buyer
     );
-    event Log_ChangeProposalStatus(uint256 _proposalId, bool _status);
+    event Log_ChangeProposalStatus(uint256 _proposalId, bool _status, address indexed _caller);
     event Log_ExecuteProposal(uint256 _proposalId, address indexed _winner);
     event Log_RefundTicket(
         uint256 _proposalId,
@@ -616,9 +616,10 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
     // Function to stop a raffle abruptly or continue the raffle.
     // Takes the proposal ID as an argument.
     function changeProposalStatus(uint256 _proposalId) public onlyValidators {
+        emit Log_ChangeProposalStatus(_proposalId, raffles[_proposalId].stop, msg.sender);
         //this continue or stop a proposal
         raffles[_proposalId].stop = !raffles[_proposalId].stop;
-        emit Log_ChangeProposalStatus(_proposalId, raffles[_proposalId].stop);
+        emit Log_ChangeProposalStatus(_proposalId, raffles[_proposalId].stop, msg.sender);
     }
 
     //this returns the status of the current proposal
