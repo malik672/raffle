@@ -615,7 +615,7 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
 
     // Function to stop a raffle abruptly or continue the raffle.
     // Takes the proposal ID as an argument.
-    function changeProposalStatus(uint256 _proposalId) public onlyValidators {
+    function changeProposalStatus(uint256 _proposalId) public  {
         emit Log_ChangeProposalStatus(_proposalId, raffles[_proposalId].stop, msg.sender);
         //this continue or stop a proposal
         raffles[_proposalId].stop = !raffles[_proposalId].stop;

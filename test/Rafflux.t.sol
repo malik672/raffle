@@ -161,7 +161,9 @@ contract RaffluxTest is Test {
 
     function testStopProposal() public {
         testValidatorDeposit();
-        vm.startPrank(address(validator));
+        vm.startPrank(myAddress);
+        validator.proposeRaffle('testing a raffle', msg.sender, 0, 1, 10, 10, address(punks), 3, 0 ether);
+        console.log(punks.ownerOf(3));
         validator.addValidators();
         validator.changeProposalStatus(0);
         vm.stopPrank();

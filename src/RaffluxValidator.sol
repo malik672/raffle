@@ -72,4 +72,8 @@ contract RaffluxValidator is RaffluxMain {
     function returnValidators() public view returns(address[] memory){
         return currentsValidator;
     }
+
+    function returnMainAddress() public view returns(address) {
+        return address(Main);
+    }
 }
