@@ -159,17 +159,50 @@ contract RaffluxTest is Test {
       vm.stopPrank();
     }
 
-    function testStopProposal() public {
+    function testValidatorBuyTicketMinTicket() public {
+      testValidatorDeposit();
+      testValidatorProposeRaffle(0);
+      validator.buyTicket(0);
+      vm.expectRevert("maximum ticket reached");
+      validator.buyTicket(0);
+    }
+
+    function testValidatorBuyTicketMaxTicket() public {
+      testValidatorDeposit();
+      testValidatorProposeRaffle(10);
+      validator.buyTicket(0);
+    }
+
+
+
+    function testValidatorProposeRaffle(uint256 _ticket) public {
         testValidatorDeposit();
         vm.startPrank(myAddress);
-        validator.proposeRaffle('testing a raffle', msg.sender, 0, 1, 10, 10, address(punks), 3, 0 ether);
+        validator.proposeRaffle('testing a raffle', msg.sender, 0, 1, _ticket, 10, address(punks), 3, 0 ether);
         console.log(punks.ownerOf(3));
-        validator.addValidators();
-        validator.changeProposalStatus(0);
         vm.stopPrank();
     }
 
-    function testContinueProposal() public {
+    function testStopProposal() public {
+        testValidatorProposeRaffle(0);
+        vm.startPrank(myAddress);
+        validator.addValidators();
+        validator.changeProposalStatus(1);
+        validator.buyTicket(0); 
+        vm.expectRevert("should revert since proposal has stopped");
+        vm.stopPrank();
+        console.log( validator.returnMainAddress());
+    }
 
+    function testContinueProposal() public {
+      testStopProposal();
+      vm.startPrank(myAddress);
+      validator.changeProposalStatus(0);
+      validator.buyTicket(0); 
+      vm.stopPrank();
+    }
+
+    function testProposalDao() public {
+      rafflux.startProposal(msg.sender, "we need to stop proposal 3, its a scam", _voteFor, _voteAgainst, _raffleId, _functionId);
     }
 }

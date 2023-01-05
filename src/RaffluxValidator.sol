@@ -5,8 +5,9 @@ import "./RaffluxMain.sol";
 contract RaffluxValidator is RaffluxMain {
      RaffluxMain Main;
 
-    constructor() public {
-        Main = new RaffluxMain();
+    constructor() {
+      Main = new RaffluxMain();
+
     }
 
     //map of address to index

@@ -41,13 +41,6 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
     using ERC165Checker for address;
 
     /**
-     * @dev The contract's constructor initializes the RafluxStorage contract.
-     */
-    constructor() public payable {
-        
-    }
-
-    /**
      * @dev The proposedRaffle struct defines the information for a proposed raffle. It includes the
      * owner, description, start and end time, prize token, and other details.
      */
@@ -143,9 +136,6 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
     //map of proposalid to buyersTicket
     mapping(uint256 => mapping(address => uint256[])) public ticketId;
 
-    //mapping of addresses to bool, this is used to select a validator
-    mapping(address => bool) private valid;
-
     //map of proposalId to
     mapping(uint256 => bool) private isActive;
 
@@ -169,7 +159,7 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
     }
 
     modifier onlyValidators() {
-        if (valid[msg.sender] != true)
+        if (Validators[msg.sender] != true)
             revert transactReverted("not a validator");
 
         _;
@@ -180,6 +170,10 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
         if(_points == 0) revert pointRevert("can't be zero");
         _;
     }
+
+    // modifier checkNftOwner() {
+    //     if() revert("owner incorrect");
+    // }
 
     //FUNCTIONS
         //standard that allows us to recceive erc1155 tokens
@@ -347,7 +341,7 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
     function getRandomness() public {}
 
     //this adds or remove status depending  on the value of _status
-    function changeValidator(address _user, bool _status) external {
+    function changeValidator(address _user, bool _status) external onlyOwner {
         Validators[_user] = _status;
     }
 
@@ -386,9 +380,11 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
         if (isActive[_proposalId] != true)
             revert transactReverted("raffle is no longer active");
         if (raffles[_proposalId].stop == true)
-            revert transactReverted("raffle is no longer active");
+            revert transactReverted("raffle has stopped");
         if (raffles[_proposalId].price != msg.value)
             revert transactReverted("Insufficent Funds");
+        if(raffles[_proposalId].maxTicket <= totalAmount[_proposalId])
+            revert transactReverted("maximum ticket reached");
         hasTicket[_proposalId][msg.sender] = true;
         updatePoints(msg.sender, 10, _proposalId, true);
         ++totalTicket[msg.sender];
@@ -461,7 +457,7 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
 
         // Check if the raffle has been stopped
         if (raffles[_proposalId].stop == true)
-            revert transactReverted("raffle is no longer active");
+            revert transactReverted("raffle has stopped");
 
         // Update the points for the caller and receiver
         updatePoints(msg.sender, 10, _proposalId, false);
@@ -615,7 +611,7 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
 
     // Function to stop a raffle abruptly or continue the raffle.
     // Takes the proposal ID as an argument.
-    function changeProposalStatus(uint256 _proposalId) public  {
+    function changeProposalStatus(uint256 _proposalId) public onlyValidators  {
         emit Log_ChangeProposalStatus(_proposalId, raffles[_proposalId].stop, msg.sender);
         //this continue or stop a proposal
         raffles[_proposalId].stop = !raffles[_proposalId].stop;
