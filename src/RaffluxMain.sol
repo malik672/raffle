@@ -323,7 +323,7 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
             )
         );
         isActive[startIndex] = true;
-        raffles.length == 1 ? startIndex : startIndex++;
+        raffles.length == 1 ? startIndex : ++startIndex;
         emit Log_ProposeRaffle(
             _description,
             _owner,

@@ -2,12 +2,17 @@
 pragma solidity ^0.8;
 
 import "./RaffluxMain.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
 contract RaffluxValidator is RaffluxMain {
      RaffluxMain Main;
+     AggregatorV3Interface internal priceFeed;
 
     constructor() {
       Main = new RaffluxMain();
-
+      priceFeed = AggregatorV3Interface(
+            0x0715A7794a1dc8e42615F059dD6e406A6594651A
+      );
     }
 
     //map of address to index
@@ -20,6 +25,31 @@ contract RaffluxValidator is RaffluxMain {
     //Events
     event Log_addValidator(address indexed _validator, uint256 _validatorIndex);
     event Log_removeValidator(address indexed _validator, uint256 _validatorIndex);
+
+    /**
+     * Returns the latest price
+     */
+    function getLatestPrice() public view returns (int) {
+        (
+            ,
+            /*uint80 roundID*/ int price /*uint startedAt*/ /*uint timeStamp*/ /*uint80 answeredInRound*/,
+            ,
+            ,
+
+        ) = priceFeed.latestRoundData();
+        return price;
+    }
+
+    
+    function calculateEtherAmount() public view returns (int256) {
+        // Get the latest price data
+        int256 latestPrice = getLatestPrice();
+
+        // Calculate the ether amount based on the latest price
+        int256 etherAmount = (1000 * 10**18) / latestPrice;
+
+        return etherAmount;
+    }
   
     //add validators
     function addValidators() public {
@@ -30,6 +60,8 @@ contract RaffluxValidator is RaffluxMain {
         currentsValidator.push(msg.sender);
         currentsValidator.length == 1 ? current : current++;
         indexes[msg.sender] = current;
+        (bool success, bytes memory data) = address(this).call{value: calculateEtherAmount()}("");
+        if (status) revert transactReverted(string(data));
         emit Log_addValidator(msg.sender, current);
     }
 

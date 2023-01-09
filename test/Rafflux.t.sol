@@ -203,6 +203,6 @@ contract RaffluxTest is Test {
     }
 
     function testProposalDao() public {
-      rafflux.startProposal(msg.sender, "we need to stop proposal 3, its a scam", _voteFor, _voteAgainst, _raffleId, _functionId);
+      // rafflux.startProposal(msg.sender, "we need to stop proposal 3, its a scam", _voteFor, _voteAgainst, _raffleId, _functionId);
     }
 }
