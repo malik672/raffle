@@ -170,11 +170,7 @@ contract RaffluxMain is  IERC721Receiver, IERC1155Receiver, Ownable {
         if(_points == 0) revert pointRevert("can't be zero");
         _;
     }
-
-    // modifier checkNftOwner() {
-    //     if() revert("owner incorrect");
-    // }
-
+    
     //FUNCTIONS
         //standard that allows us to recceive erc1155 tokens
     function onERC1155Received(
