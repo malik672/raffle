@@ -2,7 +2,8 @@
 pragma solidity ^0.8;
 
 import "./RaffluxMain.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "../lib/chainlink.git/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
 
 contract RaffluxValidator is RaffluxMain {
      RaffluxMain Main;
@@ -11,6 +12,7 @@ contract RaffluxValidator is RaffluxMain {
     constructor() {
       Main = new RaffluxMain();
       priceFeed = AggregatorV3Interface(
+            //USD/ETH price feed on mumbai
             0x0715A7794a1dc8e42615F059dD6e406A6594651A
       );
     }
@@ -58,10 +60,10 @@ contract RaffluxValidator is RaffluxMain {
             revert transactReverted("already a validator");
         Main.changeValidator(msg.sender, true);
         currentsValidator.push(msg.sender);
-        currentsValidator.length == 1 ? current : current++;
+        currentsValidator.length == 1 ? current : ++current;
         indexes[msg.sender] = current;
-        (bool success, bytes memory data) = address(this).call{value: calculateEtherAmount()}("");
-        if (status) revert transactReverted(string(data));
+        (bool success, bytes memory data) = address(this).call{value: uint256(calculateEtherAmount())}("");
+        if (success) revert transactReverted(string(data));
         emit Log_addValidator(msg.sender, current);
     }
 

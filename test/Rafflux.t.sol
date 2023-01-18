@@ -110,8 +110,8 @@ contract RaffluxTest is Test {
 
     function testAddValidatorsTwice() public {
        validator.addValidators();
+       vm.expectRevert(bytes("already a validator"));
        validator.addValidators();
-       vm.expectRevert("already a validator");
     }
 
     function testFuzzValidators() public {
@@ -187,9 +187,9 @@ contract RaffluxTest is Test {
         testValidatorProposeRaffle(0);
         vm.startPrank(myAddress);
         validator.addValidators();
+        vm.expectRevert(CustomError.selector);
         validator.changeProposalStatus(1);
         validator.buyTicket(0); 
-        vm.expectRevert("should revert since proposal has stopped");
         vm.stopPrank();
         console.log( validator.returnMainAddress());
     }

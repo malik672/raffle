@@ -4,3 +4,9 @@
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "lib/ds-test.git"]
+	path = lib/ds-test.git
+	url = https://github.com/dapphub/ds-test.git
+[submodule "lib/chainlink.git"]
+	path = lib/chainlink.git
+	url = https://github.com/smartcontractkit/chainlink.git
