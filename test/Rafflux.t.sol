@@ -8,6 +8,8 @@ import {RaffluxDao} from "../src/RaffluxDao.sol";
 import {RaffluxMain} from "../src/RaffluxMain.sol";
 import {RaffluxValidator} from "../src/RaffluxValidator.sol";
 
+error transactReverted(string data);
+
 //this a custom nft created on the polygon testnet used to test this
 interface myNfts {
     function balanceOf(address) external view returns (uint256);
@@ -187,7 +189,7 @@ contract RaffluxTest is Test {
         testValidatorProposeRaffle(0);
         vm.startPrank(myAddress);
         validator.addValidators();
-        vm.expectRevert(CustomError.selector);
+        vm.expectRevert(bytes(abi.encodePacked("already a validator")));
         validator.changeProposalStatus(1);
         validator.buyTicket(0); 
         vm.stopPrank();
