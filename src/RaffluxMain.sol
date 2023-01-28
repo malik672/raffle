@@ -107,7 +107,7 @@ interface ITest {
        // Maps the proposal ID to the total amount of Ether collected for the raffle.
        mapping(uint256 => uint256) public totalAmount;
 
-       //maps of proposalId to amount, this mapping is used to track ticket has bought a particular has per proposalId
+       //maps of proposalId to amount, this mapping is used to track ticket has bought a particular has per proposalIds
        mapping(uint256 => mapping(address => uint256)) private totalUserTicket;
 
        //mapping of proposalId to amount, this mapping is used to track ticket has bought a particular has per proposalId
