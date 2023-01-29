@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -50,7 +49,9 @@ interface ITest {
         string description; //description of raffle
     }
 
-        //Events
+        /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+       //////////////////////////////////////////////////////////////*/
         event Log_DelegateTicket(
             uint256 _raffleId,
             address indexed _receiver,
@@ -82,16 +83,29 @@ interface ITest {
         event removePoint(address indexed _user, uint256 _points);
         event addPoint(address indexed _user, uint256 _points);
 
+        //State Variable
+        bytes4 public constant IID_ITEST = type(ITest).interfaceId;
+        bytes4 public constant IID_IERC165 = type(IERC165).interfaceId;
+        bytes4 public constant IID_IERC1155 = type(IERC1155).interfaceId;
+        bytes4 public constant IID_IERC721 = type(IERC721).interfaceId;
+        uint256 public startIndex = 0; // The starting index for new proposals.
+        //proposed raffles
+        proposedRaffle[] public raffles;
+        uint256 public currentValidators;
+
+
 
        /*//////////////////////////////////////////////////////////////
                                  ERRORS
        //////////////////////////////////////////////////////////////*/
        error UnauthorizedCaller(address caller);
-       error noTimeRemaining(string data);
+       error noTime(string data);
        error reverted();
        error transactReverted(string data);
 
-       //MAPPINGS
+       /*//////////////////////////////////////////////////////////////
+                                 MAPPINGS
+       //////////////////////////////////////////////////////////////*/
        // Maps the proposal ID to the remaining time until the raffle ends.
         mapping(uint256 => uint256) public timeLefts;
 
@@ -137,7 +151,9 @@ interface ITest {
        // A mapping of conc address to user address to token
        mapping(address => mapping(address => uint256)) private checks;
 
-       //MODIFIERS
+        /*//////////////////////////////////////////////////////////////
+                                 MODIFIERS
+       //////////////////////////////////////////////////////////////*/ 
        modifier checksTime(uint256 _raffleId) {
         if (timeLeft(_raffleId) == 0) revert noTime("the raffle has closed");
 
@@ -153,7 +169,7 @@ interface ITest {
 
        //checks if points is zero
        modifier checkZero(uint256 _points) {
-        if(_points == 0) revert pointRevert("can't be zero");
+        if(_points == 0) revert transactReverted("points can't be zero");
         _;
        }
     
@@ -212,7 +228,7 @@ interface ITest {
     function updatePoints(
         address _user,
         uint256 _points,
-        uint256 _proposalId,
+        uint256 _raffleId,
         bool _bool
     ) private checkZero(_points)   {
         //if bool is true add to user points else subtract from user points
@@ -220,7 +236,7 @@ interface ITest {
             points[_raffleId][_user] += _points;
             emit addPoint(_user, _points);
         } else {
-            if(viewPoints(_user, _raffleId) < _points) revert pointRevert("not enough available");
+            if(viewPoints(_user, _raffleId) < _points) revert transactReverted("not enough points available");
             //check already prevent for underflow            
             unchecked {
                 points[_raffleId][_user] -= _points;
@@ -236,7 +252,7 @@ interface ITest {
             Token.transferFrom(address(this), msg.sender, _tokenId);
         }else if (isERC1155(_tokenAddress)) {
             IERC1155 Tokens = IERC1155(_tokenAddress);
-            Tokens.transferFrom(address(this), msg.sender, _tokenId, 1, 0x0);
+            Tokens.safeTransferFrom(address(this), msg.sender, _tokenId, 1, "");
         }
     }
 
@@ -287,24 +303,24 @@ interface ITest {
     function proposeRaffle(
         string memory _description,
         address _owner,
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _maxTicket,
-        uint256 _ticketPerUser,
+        uint64 _startTime,
+        uint64 _endTime,
+        uint64 _maxTicket,
+        uint64 _ticketPerUser,
         address _prize,
-        uint256 _tokenId,
-        uint256 _price
+        uint64 _tokenId,
+        uint64 _price
     ) public {
         raffles.push(
             proposedRaffle(
                 _owner,
                 false,
-                startIndex,
+                uint64(startIndex),
                 _price,
                 _prize,
-                _maxTicket,
-                block.timestamp.add(_startTime),
-                block.timestamp.add(_endTime),
+                _maxTicket, 
+                uint64(block.timestamp +_startTime),
+                uint64(block.timestamp +_endTime),
                 _ticketPerUser,
                 _tokenId,
                 address(0),
@@ -377,7 +393,7 @@ interface ITest {
      ++totalTicket[msg.sender];
      ++maximumUserTicket[_raffleId][msg.sender];
      ++totalUserTicket[_raffleId][msg.sender];
-     totalAmount[_raffleId] = totalAmount[_raffleId].add(msg.value);
+     totalAmount[_raffleId] = totalAmount[_raffleId]  + msg.value;
 
      buyers[_raffleId].push(msg.sender);
      ticketId[_raffleId][msg.sender].push(
@@ -537,9 +553,9 @@ interface ITest {
      * @param _raffleId The ID of the proposal for which to get the remaining time.
      * @return The number of seconds until the raffle ends.
      */
-     function timeLeft(uint256 _rafffleId) public view returns (uint256) {
+     function timeLeft(uint256 _raffleId) public view returns (uint256) {
         if (block.timestamp < raffles[_raffleId].endTime) {
-            return raffles[_raffleId].endTime.sub(block.timestamp);
+            return raffles[_raffleId].endTime - block.timestamp;
         } else {
             return 0;
         }

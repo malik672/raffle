@@ -109,15 +109,15 @@ contract RaffluxDao is RaffluxValidator{
       isValid[_proposalId] = false;
       if (proposals[_proposalId].functionId == 0) {
         // This block of code will be executed if x is 0.
-         Validator.changeProposalStatus(proposals[_proposalId].raffleId);
+        //  Validator.changeProposalStatus(proposals[_proposalId].raffleId);
       }
       if(proposals[_proposalId].functionId == 1){
         // This block of code will be executed if x is 1.
-        Validator.executeProposal(proposals[_proposalId].raffleId);
+        // Validator.executeProposal(proposals[_proposalId].raffleId);
       }
       if(proposals[_proposalId].functionId == 2){
         // This block of code will be executed if x is 2.
-        Validator.executeProposal(proposals[_proposalId].raffleId);
+        // Validator.executeProposal(proposals[_proposalId].raffleId);
       }
       emit Log_ExecuteProposalDao(_proposalId, proposals[_proposalId].voteFor, proposals[_proposalId].voteAgainst);
     }
