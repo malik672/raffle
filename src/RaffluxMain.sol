@@ -96,9 +96,6 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
     // Maps the proposal ID to the remaining time until the raffle ends.
     mapping(uint256 => uint256) public timeLefts;
 
-    //Maps the raffleId to a bool, this checks if the user can vote
-    mapping(uint256 => bool) canVotes;
-
     // Maps the proposal ID and user address to whether the user has bought a ticket for the raffle.
     mapping(uint256 => mapping(address => bool)) public hasTicket;
 
@@ -322,7 +319,6 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
      * @param _raffleId The ID of the raffle proposal.
      */
     function buyTicket(uint256 _raffleId) public payable checksTime(_raffleId) {
-        canVotes[_raffleId] = true;
         if (maximumUserTicket[_raffleId][msg.sender] == raffles[_raffleId].ticketPerUser) {
             revert transactReverted("maximum ticket reached");
         }
@@ -353,7 +349,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         if (status) {
             revert transactReverted(string(data));
         }
-        emit Log_BuyTicket(_raffleId, 1, msg.sender);
+        emit Log_BuyTicket(_raffleId, msg.value, msg.sender);
     }
 
     //returns the total ticket sold based on raffleId
@@ -440,11 +436,6 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         }
         // Emit an event for the ticket delegation
         emit Log_DelegateTicket(_raffleId, _receiver, msg.sender);
-    }
-
-    //this function checks if a user can vote on a raffleId;
-    function canVote(uint256 _raffleId) external {
-        canVotes[_raffleId] = true;
     }
 
     // Function to execute a raffle when the end time is reached or maximum ticket has been sold.

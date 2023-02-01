@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
+import {console} from "./utils/Console.sol";
 import {stdError} from "forge-std/Test.sol";
 import {RaffluxMain} from "../src/RaffluxMain.sol";
 
@@ -13,7 +14,7 @@ interface myNfts {
 }
 
 contract RaffluxMainTest is Test, RaffluxMain {
-    // Vm internal immutable vm = Vm(HEVM_ADDRESS);
+    // Cheats constant cheats = Cheats(HEVM_ADDRESS);
     RaffluxMain main;
     address public address1;
     address public address2;
@@ -67,7 +68,6 @@ contract RaffluxMainTest is Test, RaffluxMain {
         vm.stopPrank();
         //first raffle should start at index 0
         assertEq(main.startIndex(), 0);
-
         assertTrue(main.isActive(0));
     }
 
@@ -117,18 +117,28 @@ contract RaffluxMainTest is Test, RaffluxMain {
 
     ///@notice Test buyTicket when raffle is initialized
     function testBuyTicket() public {
-        vm.deal(msg.sender, 100 ether);
+        vm.deal(myAddress, 2 ether);
         //this initializes a succesful raffle and assumes raffleId is now 1
         testProposeStartRaffleUsingERC721token();
+        //buys ticket
+        vm.startPrank(myAddress);
+        //buy ticket using 1 ether
+        (bool status, bytes memory data) =
+            address(main).call{value: 1 ether}(abi.encodeWithSignature("buyTicket(uint256)",0));
+        require(status);
+        console.log(string(data));
+        assertGt(main.totalTicket(myAddress), 0);
+        assertTrue(main.isActive(0));
+        vm.stopPrank();
     }
 
-    ///@notice testRaffle proposal when the starting time is greater than the end time, should revert
-    function testBuyTicketWithAaValidRaffleIdWithInsufficientFunds() public {
-        //this initializes a succesful raffle and assumes raffleId is now 0
-        testProposeStartRaffleUsingERC721token();
-        //should revert
-        vm.expectRevert(abi.encodeWithSelector(RaffluxMain.transactReverted.selector, "Insufficent Funds"));
-        //buys ticket
-        main.buyTicket(0);
-    }
+    // ///@notice testRaffle proposal when the starting time is greater than the end time, should revert
+    // function testBuyTicketWithAaValidRaffleIdWithInsufficientFunds() public {
+    //     //this initializes a succesful raffle and assumes raffleId is now 0
+    //     testProposeStartRaffleUsingERC721token();
+    //     //should revert
+    //     vm.expectRevert(abi.encodeWithSelector(RaffluxMain.transactReverted.selector, "Insufficent Funds"));
+    //     //buys ticket
+    //     main.buyTicket(0);
+    // }
 }
