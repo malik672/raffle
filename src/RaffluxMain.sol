@@ -75,10 +75,12 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
     bytes4 public constant IID_IERC165 = type(IERC165).interfaceId;
     bytes4 public constant IID_IERC1155 = type(IERC1155).interfaceId;
     bytes4 public constant IID_IERC721 = type(IERC721).interfaceId;
-    uint256 public startIndex = 0; // The starting index for new proposals.
+
+    uint256 public startIndex; // The starting index for new proposals.
     //proposed raffles
     proposedRaffle[] public raffles;
     uint256 public currentValidators;
+    
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -122,7 +124,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
     mapping(uint256 => mapping(address => uint256[])) public ticketId;
 
     //map of proposalId to
-    mapping(uint256 => bool) private isActive;
+    mapping(uint256 => bool) public isActive;
 
     //map of address to bool, to blacklist an address
     mapping(address => bool) private blacklist;
@@ -295,8 +297,8 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
                 _description
             )
         );
-        if(_startTime > _endTime) {
-          revert transactReverted("start time can't be greater than end time");
+        if (_startTime > _endTime) {
+            revert transactReverted("start time can't be greater than end time");
         }
         isActive[startIndex] = true;
         raffles.length == 1 ? startIndex : ++startIndex;
@@ -306,19 +308,9 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         depositNft(_prize, _tokenId, startIndex);
     }
 
-    //this adds or remove status depending  on the value of _status
-    function changeValidator(address _user, bool _status) external onlyOwner {
-        Validators[_user] = _status;
-    }
-
     //this returns buyer of a particular proposal with index specified
     function buyersOf(uint256 _raffleId, uint256 _index) public view returns (address) {
         return buyers[_raffleId][_index];
-    }
-
-    //checks whether you are a validtaor or not
-    function checkValidator(address _validator) external view returns (bool) {
-        return Validators[_validator];
     }
 
     /**
@@ -506,5 +498,15 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         } else {
             return 0;
         }
+    }
+
+    //this adds or remove status depending  on the value of _status
+    function changeValidator(address _user, bool _status) external onlyOwner {
+        Validators[_user] = _status;
+    }
+
+    //checks whether you are a validtaor or not
+    function checkValidator(address _validator) external view returns (bool) {
+        return Validators[_validator];
     }
 }
