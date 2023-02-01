@@ -295,6 +295,9 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
                 _description
             )
         );
+        if(_startTime > _endTime) {
+          revert transactReverted("start time can't be greater than end time");
+        }
         isActive[startIndex] = true;
         raffles.length == 1 ? startIndex : ++startIndex;
         emit Log_ProposeRaffle(

@@ -1,4 +1,10 @@
-@openzeppelin/=lib/openzeppelin-contracts/
-chainlink/=lib/chainlink/contracts/src/
+chainlink.git/=lib/chainlink.git/integration-tests/contracts/ethereum/src/
+ds-test.git/=lib/ds-test.git/src/
+ds-test/=lib/forge-std/lib/ds-test/src/
+erc4626-tests/=lib/openzeppelin-contracts.git/lib/erc4626-tests/
+forge-std.git/=lib/forge-std.git/src/
 forge-std/=lib/forge-std/src/
-ds-test/=lib/ds-test.git/src/
+openzeppelin-contracts.git/=lib/openzeppelin-contracts.git/contracts/
+openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/
+@openzeppelin/=lib/openzeppelin-contracts/
+solmate.git/=lib/solmate.git/src/
