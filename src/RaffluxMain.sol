@@ -76,10 +76,10 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
     bytes4 public constant IID_IERC1155 = type(IERC1155).interfaceId;
     bytes4 public constant IID_IERC721 = type(IERC721).interfaceId;
 
-    uint256 public startIndex; // The starting index for new proposals.
     //proposed raffles
     proposedRaffle[] public raffles;
-    uint256 public currentValidators;
+    uint128 public currentValidators;
+    uint128 public startIndex; // The starting index for new proposals.
     
 
     /*//////////////////////////////////////////////////////////////
@@ -106,10 +106,10 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
     mapping(uint256 => uint256) public totalAmount;
 
     //maps of proposalId to amount, this mapping is used to track ticket has bought a particular has per proposalIds
-    mapping(uint256 => mapping(address => uint256)) private totalUserTicket;
+    mapping(uint256 => mapping(address => uint256)) public totalUserTicket;
 
     //mapping of proposalId to amount, this mapping is used to track ticket has bought a particular has per proposalId
-    mapping(uint256 => mapping(address => uint256)) private maximumUserTicket;
+    mapping(uint256 => mapping(address => uint256)) public maximumUserTicket;
 
     //mapping of address to address to totalTicket
     mapping(address => uint256) public totalTicket;
@@ -127,7 +127,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
     mapping(address => bool) private blacklist;
 
     //map of uint256 to uint256 this is used to check the totalSupply based on each proposalId
-    mapping(uint256 => uint256) private totalSupply;
+    mapping(uint256 => uint256) public totalSupply;
 
     // A mapping to track the number of points that each address has.
     mapping(uint256 => mapping(address => uint256)) private points;
@@ -142,7 +142,6 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         if (timeLeft(_raffleId) == 0) {
             revert noTime("the raffle has closed");
         }
-
         _;
     }
 
@@ -331,8 +330,8 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         if (raffles[_raffleId].price != msg.value) {
             revert transactReverted("Insufficent Funds");
         }
-        if (raffles[_raffleId].maxTicket <= totalAmount[_raffleId]) {
-            revert transactReverted("maximum ticket reached");
+        if (raffles[_raffleId].maxTicket == totalSupply[_raffleId]) {
+            revert transactReverted("maximum ticket reached for this raffle");
         }
         hasTicket[_raffleId][msg.sender] = true;
         updatePoints(msg.sender, 10, _raffleId, true);
@@ -340,6 +339,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         ++maximumUserTicket[_raffleId][msg.sender];
         ++totalUserTicket[_raffleId][msg.sender];
         totalAmount[_raffleId] = totalAmount[_raffleId] + msg.value;
+        ++totalSupply[_raffleId];
 
         buyers[_raffleId].push(msg.sender);
         ticketId[_raffleId][msg.sender].push(buyers[_raffleId].length != 1 ? buyers[_raffleId].length - 1 : 0);

@@ -59,11 +59,11 @@ contract RaffluxMainTest is Test, RaffluxMain {
             myAddress, //address of raffle creator
             uint64(block.timestamp), //starting time of raffle
             uint64(block.timestamp + 10000), //ending time of raffle
-            100, //maximum ticket allocated for the raffle
-            1, //maximum ticket per user
+            10, //maximum ticket allocated for the raffle
+            5, //maximum ticket per user
             address(punks), //address of token to be used for raffle
             1, //token id of particular token
-            1 ether //price per raffle ticket
+            0 ether //price per raffle ticket
         );
         vm.stopPrank();
         //first raffle should start at index 0
@@ -85,7 +85,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
             uint64(block.timestamp), //starting time of raffle
             uint64(block.timestamp + 10000), //ending time of raffle
             100, //maximum ticket allocated for the raffle
-            1, //maximum ticket per user
+            5, //maximum ticket per user
             address(punks), //address of token to be used for raffle
             3, //token id of particular token
             1 ether //price per raffle ticket
@@ -118,27 +118,93 @@ contract RaffluxMainTest is Test, RaffluxMain {
     ///@notice Test buyTicket when raffle is initialized
     function testBuyTicket() public {
         vm.deal(myAddress, 2 ether);
-        //this initializes a succesful raffle and assumes raffleId is now 1
+        //this initializes a succesful raffle and assumes raffleId is now 0
         testProposeStartRaffleUsingERC721token();
         //buys ticket
         vm.startPrank(myAddress);
         //buy ticket using 1 ether
         (bool status, bytes memory data) =
-            address(main).call{value: 1 ether}(abi.encodeWithSignature("buyTicket(uint256)",0));
+            address(main).call{value: 100 ether}(abi.encodeWithSignature("buyTicket(uint256)", 0));
         require(status);
         console.log(string(data));
         assertGt(main.totalTicket(myAddress), 0);
         assertTrue(main.isActive(0));
+        assertTrue(main.hasTicket(0, myAddress));
+        assertGt(main.totalUserTicket(0, myAddress), 0);
+        assertGt(main.totalSupply(0), 0);
+        assertGt(main.maximumUserTicket(0, myAddress), 0);
+        assertGt(address(main).balance, 0.99 ether);
         vm.stopPrank();
     }
 
-    // ///@notice testRaffle proposal when the starting time is greater than the end time, should revert
-    // function testBuyTicketWithAaValidRaffleIdWithInsufficientFunds() public {
-    //     //this initializes a succesful raffle and assumes raffleId is now 0
-    //     testProposeStartRaffleUsingERC721token();
-    //     //should revert
-    //     vm.expectRevert(abi.encodeWithSelector(RaffluxMain.transactReverted.selector, "Insufficent Funds"));
-    //     //buys ticket
-    //     main.buyTicket(0);
-    // }
+    ///@notice testBuyTicketWithAaValidRaffleIdWithInsufficientFunds with ether less than required price should revert
+    function testBuyTicketWithAaValidRaffleIdWithInsufficientFunds() public {
+        //this initializes a succesful raffle and assumes raffleId is now 0
+        testProposeStartRaffleUsingERC721token();
+        //should revert
+        vm.expectRevert(abi.encodeWithSelector(RaffluxMain.transactReverted.selector, "Insufficent Funds"));
+        //buys ticket
+        main.buyTicket(0);
+    }
+
+    ///@notice testBuyTicketExceedMaximumTicketPerUser, when user has already reached maximum ticket, should revert
+    function testBuyTicketExceedMaximumTicketPerUser() public {
+        //this initializes a succesful raffle and assumes raffleId is now 0
+        testProposeStartRaffleUsingERC721token();
+        //maximum ticket per user based on this is 5
+        main.buyTicket(0); //1
+        main.buyTicket(0); //2
+        main.buyTicket(0); //3
+        main.buyTicket(0); //4
+        main.buyTicket(0); //5
+        vm.expectRevert(abi.encodeWithSelector(RaffluxMain.transactReverted.selector, "maximum ticket reached"));
+        main.buyTicket(0); //6
+    }
+
+    ///@notice  testBuyTicketExceedMaximumRaffleTicket, when raffles has already reached maximum ticket, should revert
+    function testBuyTicketExceedMaximumRaffleTicket() public {
+        //this initializes a succesful raffle and assumes raffleId is now 0
+        testProposeStartRaffleUsingERC721token();
+        //maximum ticket for this raffle is 10
+        main.buyTicket(0); //1
+        vm.startPrank(address(0));
+        main.buyTicket(0); //2
+        main.buyTicket(0); //3
+        main.buyTicket(0); //4
+        vm.stopPrank();
+        main.buyTicket(0); //5
+        vm.startPrank(address(1));
+        main.buyTicket(0); //6
+        main.buyTicket(0); //7
+        main.buyTicket(0); //8
+        vm.stopPrank();
+        vm.startPrank(address(2));
+        main.buyTicket(0); //9
+        main.buyTicket(0); //10
+        vm.stopPrank();
+
+        vm.startPrank(address(3));
+        vm.expectRevert(
+            abi.encodeWithSelector(RaffluxMain.transactReverted.selector, "maximum ticket reached for this raffle")
+        );
+        main.buyTicket(0); //11
+        vm.stopPrank();
+    }
+
+    ///@notice startProposal should add ten points whenever a user starts a proposal, myAddress was used throughout
+    function checkAddPointsOnBuyTicketAndStartProposal() public {
+        //this initializes a succesful raffle and assumes raffleId is now 0
+        //each additional point is done buy adding 10
+        testProposeStartRaffleUsingERC721token();
+        console.log(main.viewPoints(myAddress, 0));
+        assertGt(main.viewPoints(myAddress, 0), 0);
+        assertEq(main.viewPoints(myAddress,0), 10);
+
+        //chcek for buyTicket
+        vm.startPrank(myAddress);
+        main.buyTicket(0);
+        assertGt(main.viewPoints(myAddress, 0), 10);
+        assertEq(main.viewPoints(myAddress,0), 20);
+        vm.stopPrank();
+    }
 }
