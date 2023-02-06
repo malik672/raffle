@@ -80,7 +80,6 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
     proposedRaffle[] public raffles;
     uint128 public currentValidators;
     uint128 public startIndex; // The starting index for new proposals.
-    
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -345,8 +344,15 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         ticketId[_raffleId][msg.sender].push(buyers[_raffleId].length != 1 ? buyers[_raffleId].length - 1 : 0);
         isActive[_raffleId] = true;
 
+        // bytes memory _error =
+        //     0x0a56de76000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000266d6178696d756d207469636b6574207265616368656420666f72207468697320726166666c650000000000000000000000000000000000000000000000000000;
+
+        // assembly {
+        //     let success := call(gas(), callvalue(), _a, 28, 32, 0, 0)
+        //     if iszero(check) { revert(0, _error) }
+        // }
         (bool status, bytes memory data) = address(this).call{value: raffles[_raffleId].price}("");
-        if (status) {
+        if (!status) {
             revert transactReverted(string(data));
         }
         emit Log_BuyTicket(_raffleId, msg.value, msg.sender);
@@ -461,7 +467,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         //transfer ether to owner
         emit Log_ExecuteRaffle(_raffleId, raffles[_raffleId].winner);
         (bool status, bytes memory data) = raffles[_raffleId].owner.call{value: totalAmount[_raffleId]}("");
-        if (status) {
+        if (!status) {
             revert transactReverted(string(data));
         }
     }
