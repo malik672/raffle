@@ -307,7 +307,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
     function buyersOf(uint256 _raffleId, uint256 _index) public view returns (address) {
         return buyers[_raffleId][_index];
     }
-
+    event checkss(bool _dear);
     /**
      * @dev Function to buy a ticket for a raffle. Takes the proposal ID and the number of tickets to buy
      * as arguments. Verifies that the raffle is active, the user has not already bought a ticket for the
@@ -316,6 +316,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
      *
      * @param _raffleId The ID of the raffle proposal.
      */
+    
     function buyTicket(uint256 _raffleId) public payable checksTime(_raffleId) {
         if (maximumUserTicket[_raffleId][msg.sender] == raffles[_raffleId].ticketPerUser) {
             revert transactReverted("maximum ticket reached");
@@ -352,6 +353,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         //     if iszero(check) { revert(0, _error) }
         // }
         (bool status, bytes memory data) = address(this).call{value: raffles[_raffleId].price}("");
+        emit checkss(status);
         if (!status) {
             revert transactReverted(string(data));
         }

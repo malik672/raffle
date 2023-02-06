@@ -63,7 +63,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
             5, //maximum ticket per user
             address(punks), //address of token to be used for raffle
             1, //token id of particular token
-            0 ether //price per raffle ticket
+            1 ether //price per raffle ticket
         );
         vm.stopPrank();
         //first raffle should start at index 0
@@ -124,7 +124,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
         vm.startPrank(myAddress);
         //buy ticket using 1 ether
         (bool status, bytes memory data) =
-            address(main).call{value: 100 ether}(abi.encodeWithSignature("buyTicket(uint256)", 0));
+            address(main).call{value: 1 ether}(abi.encodeWithSignature("buyTicket(uint256)", 0));
         require(status);
         console.log(string(data));
         assertGt(main.totalTicket(myAddress), 0);
@@ -149,8 +149,11 @@ contract RaffluxMainTest is Test, RaffluxMain {
 
     ///@notice testBuyTicketExceedMaximumTicketPerUser, when user has already reached maximum ticket, should revert
     function testBuyTicketExceedMaximumTicketPerUser() public {
+        vm.deal(myAddress, 200 ether);
         //this initializes a succesful raffle and assumes raffleId is now 0
+        
         testProposeStartRaffleUsingERC721token();
+        vm.startPrank(myAddress);
         //maximum ticket per user based on this is 5
         main.buyTicket(0); //1
         main.buyTicket(0); //2
@@ -159,6 +162,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
         main.buyTicket(0); //5
         vm.expectRevert(abi.encodeWithSelector(RaffluxMain.transactReverted.selector, "maximum ticket reached"));
         main.buyTicket(0); //6
+        vm.stopPrank();
     }
 
     ///@notice  testBuyTicketExceedMaximumRaffleTicket, when raffles has already reached maximum ticket, should revert
@@ -206,5 +210,9 @@ contract RaffluxMainTest is Test, RaffluxMain {
         assertGt(main.viewPoints(myAddress, 0), 10);
         assertEq(main.viewPoints(myAddress,0), 20);
         vm.stopPrank();
+    }
+
+    function testDelegateTicket() public {
+        
     }
 }
