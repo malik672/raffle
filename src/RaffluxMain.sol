@@ -37,7 +37,6 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         address owner; //owner of the proposal
         bool stop; //stop, stop sthe proposal abruptly
         uint64 index; //index of the proposal, this increments for every proposal
-        uint64 price; //cost of the raffle ticket per user in usd
         address prize; //address of the prize of token
         uint64 maxTicket; //the number of tickets available in total
         uint64 proposedAt; //when the proposal is proposed
@@ -45,6 +44,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         uint64 ticketPerUser; //maximum ticket per user
         uint64 tokenId; //tokenId of the token
         address winner; //winner of the raffle
+        uint256 price; //cost of the raffle ticket per user in usd
         string description; //description of raffle
     }
 
@@ -272,7 +272,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         uint64 _ticketPerUser,
         address _prize,
         uint64 _tokenId,
-        uint64 _price
+        uint256 _price
     )
         public
     {
@@ -281,7 +281,6 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
                 _owner,
                 false,
                 uint64(startIndex),
-                _price,
                 _prize,
                 _maxTicket,
                 uint64(block.timestamp + _startTime),
@@ -289,6 +288,7 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
                 _ticketPerUser,
                 _tokenId,
                 address(0),
+                _price,
                 _description
             )
         );
@@ -307,7 +307,8 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
     function buyersOf(uint256 _raffleId, uint256 _index) public view returns (address) {
         return buyers[_raffleId][_index];
     }
-    event checkss(bool _dear);
+
+    event checkss(bool _dear, uint256 _value);
     /**
      * @dev Function to buy a ticket for a raffle. Takes the proposal ID and the number of tickets to buy
      * as arguments. Verifies that the raffle is active, the user has not already bought a ticket for the
@@ -352,8 +353,8 @@ contract RaffluxMain is IERC721Receiver, IERC1155Receiver, Ownable {
         //     let success := call(gas(), callvalue(), _a, 28, 32, 0, 0)
         //     if iszero(check) { revert(0, _error) }
         // }
-        (bool status, bytes memory data) = address(this).call{value: raffles[_raffleId].price}("");
-        emit checkss(status);
+        (bool status, bytes memory data) = payable(address(this)).call{value: raffles[_raffleId].price}("");
+        emit checkss(status, msg.value);
         if (!status) {
             revert transactReverted(string(data));
         }

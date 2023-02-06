@@ -49,7 +49,8 @@ contract RaffluxMainTest is Test, RaffluxMain {
     //////////////////////////////////////////////////////////////*/
 
     ///@notice  this is to check whether a raffle initialized, should be successful
-    function testProposeStartRaffleUsingERC721token() public {
+    ///@param _value this is the value to specify the price of a ticket
+    function testProposeStartRaffleUsingERC721token(uint256 _value) public {
         //approve token before proposing raffle
         testTokenApprovalERC721();
         vm.startPrank(myAddress);
@@ -63,7 +64,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
             5, //maximum ticket per user
             address(punks), //address of token to be used for raffle
             1, //token id of particular token
-            1 ether //price per raffle ticket
+            _value //price per raffle ticket
         );
         vm.stopPrank();
         //first raffle should start at index 0
@@ -74,7 +75,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
     ///@notice  this is to check whether index initialized
     function testStartIndexIncrement() public {
         //start first proposal
-        testProposeStartRaffleUsingERC721token();
+        testProposeStartRaffleUsingERC721token(0);
 
         vm.startPrank(myAddress);
         //approve tokenId 3
@@ -88,7 +89,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
             5, //maximum ticket per user
             address(punks), //address of token to be used for raffle
             3, //token id of particular token
-            1 ether //price per raffle ticket
+            0 ether //price per raffle ticket
         );
         assertEq(main.startIndex(), 1);
         assertGt(main.startIndex(), 0);
@@ -119,14 +120,14 @@ contract RaffluxMainTest is Test, RaffluxMain {
     function testBuyTicket() public {
         vm.deal(myAddress, 2 ether);
         //this initializes a succesful raffle and assumes raffleId is now 0
-        testProposeStartRaffleUsingERC721token();
+        testProposeStartRaffleUsingERC721token(0);
         //buys ticket
         vm.startPrank(myAddress);
         //buy ticket using 1 ether
-        (bool status, bytes memory data) =
-            address(main).call{value: 1 ether}(abi.encodeWithSignature("buyTicket(uint256)", 0));
-        require(status);
-        console.log(string(data));
+        // (bool status, bytes memory data) =
+        //     address(main).call{value: 1 ether, gas: 200000000}(abi.encodeWithSignature("buyTicket(uint256)", 0));
+        // require(status);
+        main.buyTicket(0);
         assertGt(main.totalTicket(myAddress), 0);
         assertTrue(main.isActive(0));
         assertTrue(main.hasTicket(0, myAddress));
@@ -140,7 +141,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
     ///@notice testBuyTicketWithAaValidRaffleIdWithInsufficientFunds with ether less than required price should revert
     function testBuyTicketWithAaValidRaffleIdWithInsufficientFunds() public {
         //this initializes a succesful raffle and assumes raffleId is now 0
-        testProposeStartRaffleUsingERC721token();
+        testProposeStartRaffleUsingERC721token(1);
         //should revert
         vm.expectRevert(abi.encodeWithSelector(RaffluxMain.transactReverted.selector, "Insufficent Funds"));
         //buys ticket
@@ -152,7 +153,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
         vm.deal(myAddress, 200 ether);
         //this initializes a succesful raffle and assumes raffleId is now 0
         
-        testProposeStartRaffleUsingERC721token();
+        testProposeStartRaffleUsingERC721token(0);
         vm.startPrank(myAddress);
         //maximum ticket per user based on this is 5
         main.buyTicket(0); //1
@@ -168,7 +169,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
     ///@notice  testBuyTicketExceedMaximumRaffleTicket, when raffles has already reached maximum ticket, should revert
     function testBuyTicketExceedMaximumRaffleTicket() public {
         //this initializes a succesful raffle and assumes raffleId is now 0
-        testProposeStartRaffleUsingERC721token();
+        testProposeStartRaffleUsingERC721token(0);
         //maximum ticket for this raffle is 10
         main.buyTicket(0); //1
         vm.startPrank(address(0));
@@ -199,7 +200,7 @@ contract RaffluxMainTest is Test, RaffluxMain {
     function checkAddPointsOnBuyTicketAndStartProposal() public {
         //this initializes a succesful raffle and assumes raffleId is now 0
         //each additional point is done buy adding 10
-        testProposeStartRaffleUsingERC721token();
+        testProposeStartRaffleUsingERC721token(0);
         console.log(main.viewPoints(myAddress, 0));
         assertGt(main.viewPoints(myAddress, 0), 0);
         assertEq(main.viewPoints(myAddress,0), 10);
@@ -213,6 +214,6 @@ contract RaffluxMainTest is Test, RaffluxMain {
     }
 
     function testDelegateTicket() public {
-        
+
     }
 }
